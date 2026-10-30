@@ -4,7 +4,11 @@ import { shouldRedirectToChatGPT } from '@/lib/popup-redirect';
 describe('shouldRedirectToChatGPT', () => {
   it('returns false for chatgpt.com URLs', () => {
     expect(shouldRedirectToChatGPT('https://chatgpt.com/')).toBe(false);
-    expect(shouldRedirectToChatGPT('https://chatgpt.com/c/abc123')).toBe(false);
+    expect(shouldRedirectToChatGPT('https://chatgpt.com:8443/')).toBe(false);
+    expect(shouldRedirectToChatGPT('https://chatgpt.com:8443/c/abc')).toBe(
+      false,
+    );
+    expect(shouldRedirectToChatGPT('https://ChatGPT.com/')).toBe(false);
     expect(shouldRedirectToChatGPT('https://www.chatgpt.com/feed')).toBe(false);
     expect(shouldRedirectToChatGPT('https://help.chatgpt.com/x')).toBe(false);
   });

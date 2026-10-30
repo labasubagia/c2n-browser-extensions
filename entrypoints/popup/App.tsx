@@ -102,6 +102,9 @@ export default function App() {
         });
         if (existing?.id) {
           await browser.tabs.update(existing.id, { active: true });
+          if (existing.windowId != null) {
+            await browser.windows.update(existing.windowId, { focused: true });
+          }
         } else {
           await browser.tabs.create({ url: 'https://chatgpt.com/' });
         }
