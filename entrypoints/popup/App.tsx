@@ -110,8 +110,7 @@ export default function App() {
         }
         window.close();
       } catch {
-        redirectStarted.current = false;
-        // keep popup open on query failure
+        // popup stays open on failure; effect runs once, no retry
       }
     })();
   }, []);

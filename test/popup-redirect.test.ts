@@ -7,6 +7,12 @@ describe('shouldRedirectToChatGPT', () => {
     expect(shouldRedirectToChatGPT('https://chatgpt.com:8443/')).toBe(false);
     expect(shouldRedirectToChatGPT('https://chatgpt.com')).toBe(false);
     expect(shouldRedirectToChatGPT('https://chatgpt.com:8443')).toBe(false);
+    expect(shouldRedirectToChatGPT('https://chatgpt.com:8443/feed')).toBe(
+      false,
+    );
+    expect(shouldRedirectToChatGPT('https://foo.chatgpt.com:8443/x')).toBe(
+      false,
+    );
     expect(shouldRedirectToChatGPT('https://chatgpt.com:8443/c/abc')).toBe(
       false,
     );
@@ -26,5 +32,9 @@ describe('shouldRedirectToChatGPT', () => {
     expect(shouldRedirectToChatGPT('https://chatgpt.com.evil.com/')).toBe(true);
     expect(shouldRedirectToChatGPT('http://chatgpt.com/')).toBe(true);
     expect(shouldRedirectToChatGPT('https://evil-chatgpt.com/')).toBe(true);
+    expect(shouldRedirectToChatGPT('https://chatgpt.com.evil.com:8443/')).toBe(
+      true,
+    );
+    expect(shouldRedirectToChatGPT('https://evil-chatgpt.com:8443')).toBe(true);
   });
 });
