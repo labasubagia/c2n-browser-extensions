@@ -499,11 +499,11 @@ export default function App() {
         </button>
         <span className="flex-1" />
         <a
-          href="https://github.com/labasubagia/c2n"
+          href="https://github.com/labasubagia/c2n-browser-extensions"
           target="_blank"
           rel="noreferrer"
         >
-          c2n
+          Github
         </a>
       </div>
     </div>

@@ -1,7 +1,7 @@
 # c2n — ChatGPT to Notion (browser extension)
 
 A Chrome/Edge extension that mirrors image generations from **one** ChatGPT account into a Notion
-database. It is a browser port of [`labasubagia/c2n`](https://github.com/labasubagia/c2n) (MIT).
+database. It is a browser port of [`labasubagia/c2n`](https://github.com/labasubagia/c2n-browser-extensions) (MIT).
 
 - Runs only on `chatgpt.com`.
 - Does **not** use `/api/auth/session`; it observes the `Authorization` header ChatGPT already sends.

@@ -522,11 +522,11 @@ export default function App() {
             ChatGPT library cleanup
           </a>
           <a
-            href="https://github.com/labasubagia/c2n"
+            href="https://github.com/labasubagia/c2n-browser-extensions"
             target="_blank"
             rel="noreferrer"
           >
-            c2n on GitHub
+            Github
           </a>
         </div>
       </section>
