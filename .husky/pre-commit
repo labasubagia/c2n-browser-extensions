@@ -1,1 +1,1 @@
-biome check --staged . && npm run typecheck
+lint-staged && npm run typecheck
