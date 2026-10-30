@@ -193,6 +193,9 @@ export default function App() {
     ? Math.min(100, Math.round((status.sync.current / status.sync.total) * 100))
     : 0;
   const errors = status.sync.errors.slice(-4);
+  const githubUrl = (
+    import.meta.env as Record<string, string | undefined>
+  ).WXT_GITHUB_URL?.trim();
 
   return (
     <div className="flex flex-col gap-3 p-4">
@@ -498,13 +501,11 @@ export default function App() {
           Library cleanup
         </button>
         <span className="flex-1" />
-        <a
-          href="https://github.com/labasubagia/c2n-browser-extensions"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Github
-        </a>
+        {githubUrl && (
+          <a href={githubUrl} target="_blank" rel="noreferrer">
+            Github
+          </a>
+        )}
       </div>
     </div>
   );

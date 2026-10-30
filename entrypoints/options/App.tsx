@@ -29,6 +29,10 @@ export default function App() {
   const [tests, setTests] = useState<NotionTestResult | null>(null);
   const [showToken, setShowToken] = useState(false);
 
+  const githubUrl = (
+    import.meta.env as Record<string, string | undefined>
+  ).WXT_GITHUB_URL?.trim();
+
   const refresh = useCallback(async () => {
     try {
       const next = await sendMessage({ type: 'GET_STATUS' });
@@ -521,13 +525,11 @@ export default function App() {
           >
             ChatGPT library cleanup
           </a>
-          <a
-            href="https://github.com/labasubagia/c2n-browser-extensions"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Github
-          </a>
+          {githubUrl && (
+            <a href={githubUrl} target="_blank" rel="noreferrer">
+              Github
+            </a>
+          )}
         </div>
       </section>
     </div>
