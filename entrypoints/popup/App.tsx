@@ -98,7 +98,7 @@ export default function App() {
           return;
         }
         const [existing] = await browser.tabs.query({
-          url: 'https://chatgpt.com/*',
+          url: ['https://chatgpt.com/*', 'https://*.chatgpt.com/*'],
         });
         if (existing?.id) {
           await browser.tabs.update(existing.id, { active: true });
