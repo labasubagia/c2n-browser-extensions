@@ -1,5 +1,5 @@
 import type { LibraryItem } from './types';
-import { requestBlobWithRetry, requestWithRetry } from './retry';
+import { HttpError, requestBlobWithRetry, requestWithRetry } from './retry';
 import {
   fileNameForGeneration,
   timestampToIso,
@@ -226,16 +226,29 @@ export async function deleteConversation(
   conversationId: string,
   signal: AbortSignal,
 ): Promise<void> {
-  await requestWithRetry(
-    `${CHATGPT_BASE_URL}/conversation/${encodeURIComponent(conversationId)}`,
-    {
-      method: 'PATCH',
-      headers: chatGptHeaders(token),
-      credentials: 'include',
-      body: JSON.stringify({ is_visible: false }),
-    },
-    { signal },
-  );
+  try {
+    await requestWithRetry(
+      `${CHATGPT_BASE_URL}/conversation/${encodeURIComponent(conversationId)}`,
+      {
+        method: 'PATCH',
+        headers: { ...chatGptHeaders(token), 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ is_visible: false }),
+      },
+      { signal },
+    );
+  } catch (error) {
+    // A conversation already deleted by another run surfaces as a 404 carrying
+    // `conversation_deleted`; treat it as already handled (matches c2n).
+    if (
+      error instanceof HttpError &&
+      error.status === 404 &&
+      error.body.includes('conversation_deleted')
+    ) {
+      return;
+    }
+    throw error;
+  }
 }
 
 export function getConversationMappingKeyByAssetPointer(
