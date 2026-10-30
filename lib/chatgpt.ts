@@ -8,6 +8,36 @@ import {
 
 export const CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api';
 
+const IMAGE_HOSTS: Record<string, true> = {
+  'chatgpt.com': true,
+  'oaiusercontent.com': true,
+  'openai.com': true,
+};
+
+/**
+ * ChatGPT image generation URLs are signed CDN links. Restrict downloads to
+ * HTTPS and the same hosts as `host_permissions` so a compromised/malicious
+ * API response cannot point the extension at file://, local/private network
+ * addresses, or other allowed-but-unintended origins.
+ */
+export function isAllowedImageUrl(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== 'https:') {
+      return false;
+    }
+    const host = url.hostname.toLowerCase();
+    return (
+      IMAGE_HOSTS[host] === true ||
+      host.endsWith('.chatgpt.com') ||
+      host.endsWith('.oaiusercontent.com') ||
+      host.endsWith('.openai.com')
+    );
+  } catch {
+    return false;
+  }
+}
+
 export interface ImageGenItem {
   id: string;
   messageId: string;
@@ -131,6 +161,9 @@ export async function downloadImage(
   rawUrl: string,
   signal: AbortSignal,
 ): Promise<Blob> {
+  if (!isAllowedImageUrl(rawUrl)) {
+    throw new Error('Unsafe image URL');
+  }
   const url = new URL(rawUrl);
   const isChatGpt = url.origin === 'https://chatgpt.com';
   const headers: HeadersInit = isChatGpt

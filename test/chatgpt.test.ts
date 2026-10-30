@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getConversationMappingKeyByAssetPointer,
   getPromptFromImageNodeInConversation,
+  isAllowedImageUrl,
   normalizeImageGenItem,
   parseSseEvents,
 } from '@/lib/chatgpt';
@@ -117,5 +118,25 @@ describe('SSE parsing', () => {
 
   it('falls back to line-delimited JSON', () => {
     expect(parseSseEvents('{"ok":true}\nnot json')).toEqual([{ ok: true }]);
+  });
+});
+
+describe('download image URL guard', () => {
+  it('allows https CDN hosts', () => {
+    expect(isAllowedImageUrl('https://files.oaiusercontent.com/a.png')).toBe(
+      true,
+    );
+    expect(isAllowedImageUrl('https://chatgpt.com/a.png')).toBe(true);
+    expect(isAllowedImageUrl('https://cdn.openai.com/a.png')).toBe(true);
+  });
+
+  it('rejects unsafe schemes and unrelated hosts', () => {
+    expect(isAllowedImageUrl('http://files.oaiusercontent.com/a.png')).toBe(
+      false,
+    );
+    expect(isAllowedImageUrl('file:///etc/passwd')).toBe(false);
+    expect(isAllowedImageUrl('https://127.0.0.1/a.png')).toBe(false);
+    expect(isAllowedImageUrl('https://evil.com/a.png')).toBe(false);
+    expect(isAllowedImageUrl('not a url')).toBe(false);
   });
 });
