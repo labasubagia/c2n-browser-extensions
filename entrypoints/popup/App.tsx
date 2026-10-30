@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import {
   isStateUpdate,
@@ -7,6 +7,7 @@ import {
   type RuntimeStatus,
   sendMessage,
 } from '@/lib/messages';
+import { shouldRedirectToChatGPT } from '@/lib/popup-redirect';
 import { loadSettings, saveSettings } from '@/lib/settings';
 import type { SyncState } from '@/lib/types';
 import { errorMessage } from '@/lib/util';
@@ -83,7 +84,36 @@ export default function App() {
       setError(errorMessage(loadError));
     }
   }, []);
-
+  const redirectStarted = useRef(false);
+  useEffect(() => {
+    if (redirectStarted.current) return;
+    redirectStarted.current = true;
+    void (async () => {
+      try {
+        const [tab] = await browser.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        if (!shouldRedirectToChatGPT(tab?.url)) {
+          return;
+        }
+        const [existing] = await browser.tabs.query({
+          url: ['https://chatgpt.com/*', 'https://*.chatgpt.com/*'],
+        });
+        if (existing?.id != null) {
+          await browser.tabs.update(existing.id, { active: true });
+          if (existing.windowId != null) {
+            await browser.windows.update(existing.windowId, { focused: true });
+          }
+        } else {
+          await browser.tabs.create({ url: 'https://chatgpt.com/' });
+        }
+        window.close();
+      } catch {
+        // popup stays open on failure; effect runs once, no retry
+      }
+    })();
+  }, []);
   useEffect(() => {
     void refresh();
     const timer = window.setInterval(() => {
