@@ -201,7 +201,7 @@ export default function App() {
 
       <section className="card stack">
         <div className="card__head">
-          <span className="card__title">1. Scan</span>
+          <span className="card__title">Scan Library</span>
           <span className="spacer" />
           {library?.phase === 'scanning' && (
             <span className="badge badge--ok">Scanning</span>
@@ -231,7 +231,7 @@ export default function App() {
             onClick={() => void scan()}
             type="button"
           >
-            {busy === 'scan' ? 'Scanning…' : 'Scan library'}
+            {busy === 'scan' ? 'Scanning…' : 'Scan'}
           </button>
         </div>
         <span className="hint">
