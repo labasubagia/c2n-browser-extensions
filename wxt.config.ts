@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
 
 // WSL users can point the build output at a Windows drive so Chrome/Edge can
@@ -9,6 +10,9 @@ const outDir = process.env.C2N_OUT_DIR?.trim();
 export default defineConfig({
   ...(outDir ? { outDir } : {}),
   modules: ['@wxt-dev/module-react'],
+  vite: () => ({
+    plugins: [tailwindcss()],
+  }),
   manifest: {
     name: 'c2n — ChatGPT to Notion',
     description:
