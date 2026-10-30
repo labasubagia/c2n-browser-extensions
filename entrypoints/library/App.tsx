@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { browser } from 'wxt/browser';
-import { isStateUpdate, openOptionsPage, sendMessage, type RuntimeStatus } from '@/lib/messages';
+import {
+  isStateUpdate,
+  openOptionsPage,
+  type RuntimeStatus,
+  sendMessage,
+} from '@/lib/messages';
 import type { LibraryItem } from '@/lib/types';
 import { errorMessage } from '@/lib/util';
 
@@ -36,7 +41,9 @@ export default function App() {
     const listener = (message: unknown) => {
       if (isStateUpdate(message)) {
         setStatus((current) =>
-          current ? { ...current, sync: message.sync, library: message.library } : current,
+          current
+            ? { ...current, sync: message.sync, library: message.library }
+            : current,
         );
       }
       return false;
@@ -51,8 +58,12 @@ export default function App() {
   const library = status?.library;
   const scanning = library?.running ?? false;
   const syncRunning = status?.sync.running ?? false;
-  const expected = useMemo(() => (scannedQuery.trim() ? 'DELETE' : 'DELETE ALL'), [scannedQuery]);
-  const confirmationMatches = confirmation.trim() === expected && items.length > 0;
+  const expected = useMemo(
+    () => (scannedQuery.trim() ? 'DELETE' : 'DELETE ALL'),
+    [scannedQuery],
+  );
+  const confirmationMatches =
+    confirmation.trim() === expected && items.length > 0;
   const progress = library?.total
     ? Math.min(100, Math.round((library.deleted / library.total) * 100))
     : 0;
@@ -97,7 +108,10 @@ export default function App() {
       const latest = await refresh();
       if (!result.ok) {
         setError(result.error ?? 'Delete failed.');
-      } else if (latest && (latest.library.failed > 0 || latest.library.phase === 'cancelled')) {
+      } else if (
+        latest &&
+        (latest.library.failed > 0 || latest.library.phase === 'cancelled')
+      ) {
         setConfirmation('');
         setNotice(
           latest.library.phase === 'cancelled'
@@ -107,7 +121,9 @@ export default function App() {
       } else {
         setItems([]);
         setConfirmation('');
-        setNotice('Deletion finished. Check the counters below for any failures.');
+        setNotice(
+          'Deletion finished. Check the counters below for any failures.',
+        );
       }
     } catch (deleteError) {
       setError(errorMessage(deleteError));
@@ -138,23 +154,30 @@ export default function App() {
             <div className="brand__mark">c2n</div>
             <div>
               <div className="brand__title">Library cleanup</div>
-              <div className="brand__subtitle">Delete images from ChatGPT’s library</div>
+              <div className="brand__subtitle">
+                Delete images from ChatGPT’s library
+              </div>
             </div>
           </div>
-          <button className="btn btn--sm" onClick={openOptionsPage} type="button">
+          <button
+            className="btn btn--sm"
+            onClick={openOptionsPage}
+            type="button"
+          >
             Settings
           </button>
         </div>
         <p className="page-lead">
-          Scan the ChatGPT image library, review exactly what matched, then type a confirmation to
-          delete. Deletion is a soft delete in ChatGPT’s own library; it does not touch conversations
-          or Notion pages.
+          Scan the ChatGPT image library, review exactly what matched, then type
+          a confirmation to delete. Deletion is a soft delete in ChatGPT’s own
+          library; it does not touch conversations or Notion pages.
         </p>
       </header>
 
       {!status?.auth.present && (
         <div className="banner banner--warn">
-          No ChatGPT session captured. Open chatgpt.com, sign in, and reload the page before scanning.
+          No ChatGPT session captured. Open chatgpt.com, sign in, and reload the
+          page before scanning.
         </div>
       )}
 
@@ -170,9 +193,9 @@ export default function App() {
       <section className="card stack stack--tight">
         <div className="warning-title">Destructive action</div>
         <p className="small">
-          Images matching the query are removed from the ChatGPT library and may disappear from image
-          pickers. Start with a narrow query, confirm the preview, and keep the extension open until
-          the operation finishes.
+          Images matching the query are removed from the ChatGPT library and may
+          disappear from image pickers. Start with a narrow query, confirm the
+          preview, and keep the extension open until the operation finishes.
         </p>
       </section>
 
@@ -180,8 +203,12 @@ export default function App() {
         <div className="card__head">
           <span className="card__title">1. Scan</span>
           <span className="spacer" />
-          {library?.phase === 'scanning' && <span className="badge badge--ok">Scanning</span>}
-          {library?.phase === 'deleting' && <span className="badge badge--warn">Deleting</span>}
+          {library?.phase === 'scanning' && (
+            <span className="badge badge--ok">Scanning</span>
+          )}
+          {library?.phase === 'deleting' && (
+            <span className="badge badge--warn">Deleting</span>
+          )}
         </div>
         <div className="row" style={{ flexWrap: 'nowrap' }}>
           <input
@@ -198,7 +225,9 @@ export default function App() {
           />
           <button
             className="btn btn--primary"
-            disabled={Boolean(busy) || scanning || syncRunning || !status?.auth.present}
+            disabled={
+              Boolean(busy) || scanning || syncRunning || !status?.auth.present
+            }
             onClick={() => void scan()}
             type="button"
           >
@@ -206,7 +235,8 @@ export default function App() {
           </button>
         </div>
         <span className="hint">
-          Scanning only counts and lists items. Nothing is deleted until you confirm below.
+          Scanning only counts and lists items. Nothing is deleted until you
+          confirm below.
         </span>
       </section>
 
@@ -266,7 +296,7 @@ export default function App() {
           </div>
           <div className="scroll-box">
             {visibleItems.map((item, index) => (
-              <div className="list-item" key={`${item.id}-${index}`}>
+              <div className="list-item" key={item.id}>
                 <span className="list-item__index">{index + 1}</span>
                 <span>{item.name}</span>
               </div>
@@ -318,11 +348,18 @@ export default function App() {
             <div className="row">
               <button
                 className="btn btn--danger"
-                disabled={!confirmationMatches || Boolean(busy) || scanning || syncRunning}
+                disabled={
+                  !confirmationMatches ||
+                  Boolean(busy) ||
+                  scanning ||
+                  syncRunning
+                }
                 onClick={() => void remove()}
                 type="button"
               >
-                {busy === 'delete' ? 'Deleting…' : `Delete ${items.length} image${items.length === 1 ? '' : 's'}`}
+                {busy === 'delete'
+                  ? 'Deleting…'
+                  : `Delete ${items.length} image${items.length === 1 ? '' : 's'}`}
               </button>
               <button
                 className="btn btn--ghost"
@@ -345,8 +382,8 @@ export default function App() {
         <section className="card stack stack--tight">
           <span className="card__title">Errors</span>
           <ul className="error-list">
-            {library.errors.map((entry, index) => (
-              <li key={`${entry.at}-${index}`}>
+            {library.errors.map((entry, _index) => (
+              <li key={entry.id}>
                 {entry.fileName !== '—' ? `${entry.fileName}: ` : ''}
                 {entry.message}
               </li>
@@ -355,12 +392,15 @@ export default function App() {
         </section>
       )}
 
-      {library && (library.phase === 'done' || library.phase === 'cancelled') && (
-        <div className="banner banner--info">{library.message}</div>
-      )}
+      {library &&
+        (library.phase === 'done' || library.phase === 'cancelled') && (
+          <div className="banner banner--info">{library.message}</div>
+        )}
 
       <div className="footer">
-        <span>{status ? `${status.pending} generation(s) waiting to sync` : ''}</span>
+        <span>
+          {status ? `${status.pending} generation(s) waiting to sync` : ''}
+        </span>
         <span className="spacer" />
         <span>Deleting uses ChatGPT’s soft-delete endpoint.</span>
       </div>

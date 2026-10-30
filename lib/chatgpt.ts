@@ -1,9 +1,9 @@
-import type { LibraryItem } from './types';
 import { HttpError, requestBlobWithRetry, requestWithRetry } from './retry';
+import type { LibraryItem } from './types';
 import {
+  extractEmailFromUnknown,
   fileNameForGeneration,
   timestampToIso,
-  extractEmailFromUnknown,
 } from './util';
 
 export const CHATGPT_BASE_URL = 'https://chatgpt.com/backend-api';
@@ -39,7 +39,9 @@ interface RawLibraryItem {
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
+  return value && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 function asString(value: unknown): string | undefined {
@@ -63,7 +65,9 @@ function asNumber(value: unknown): number | undefined {
   return undefined;
 }
 
-export function normalizeImageGenItem(raw: RawImageGenItem): ImageGenItem | null {
+export function normalizeImageGenItem(
+  raw: RawImageGenItem,
+): ImageGenItem | null {
   const id = asString(raw.id);
   const messageId = asString(raw.message_id);
   const assetPointer = asString(raw.asset_pointer);
@@ -143,7 +147,10 @@ export async function downloadImage(
   );
 }
 
-export async function getMe(token: string, signal: AbortSignal): Promise<string | undefined> {
+export async function getMe(
+  token: string,
+  signal: AbortSignal,
+): Promise<string | undefined> {
   const response = await requestWithRetry(
     `${CHATGPT_BASE_URL}/me`,
     { method: 'GET', headers: chatGptHeaders(token), credentials: 'include' },
@@ -183,7 +190,9 @@ export async function getLibraryImages(
     { method: 'GET', headers: chatGptHeaders(token), credentials: 'include' },
     { signal },
   );
-  const data = (await response.json()) as { items?: unknown; cursor?: unknown } | undefined;
+  const data = (await response.json()) as
+    | { items?: unknown; cursor?: unknown }
+    | undefined;
   const items = Array.isArray(data?.items) ? data.items : [];
   return {
     items: items
@@ -209,12 +218,20 @@ export async function deleteLibraryFile(
   try {
     const response = await requestWithRetry(
       url.toString(),
-      { method: 'POST', headers: chatGptHeaders(token), credentials: 'include' },
+      {
+        method: 'POST',
+        headers: chatGptHeaders(token),
+        credentials: 'include',
+      },
       { signal },
     );
     return parseSseEvents(await response.text());
   } catch (error) {
-    if (error instanceof Error && 'status' in error && (error as { status?: number }).status === 404) {
+    if (
+      error instanceof Error &&
+      'status' in error &&
+      (error as { status?: number }).status === 404
+    ) {
       return [];
     }
     throw error;
@@ -231,7 +248,10 @@ export async function deleteConversation(
       `${CHATGPT_BASE_URL}/conversation/${encodeURIComponent(conversationId)}`,
       {
         method: 'PATCH',
-        headers: { ...chatGptHeaders(token), 'Content-Type': 'application/json' },
+        headers: {
+          ...chatGptHeaders(token),
+          'Content-Type': 'application/json',
+        },
         credentials: 'include',
         body: JSON.stringify({ is_visible: false }),
       },
@@ -267,9 +287,7 @@ export function getConversationMappingKeyByAssetPointer(
     if (!Array.isArray(parts)) {
       continue;
     }
-    if (
-      parts.some((part) => asRecord(part)?.asset_pointer === assetPointer)
-    ) {
+    if (parts.some((part) => asRecord(part)?.asset_pointer === assetPointer)) {
       return key;
     }
   }
@@ -289,7 +307,7 @@ export function getPromptFromImageNodeInConversation(
     return undefined;
   }
 
-  let currentId = Object.prototype.hasOwnProperty.call(mapping, startNodeId)
+  let currentId = Object.hasOwn(mapping, startNodeId)
     ? startNodeId
     : getConversationMappingKeyByAssetPointer(data, assetPointer);
   const visited = new Set<string>();
@@ -323,8 +341,11 @@ export function parseSseEvents(body: string): unknown[] {
       const line = rawLine.replace(/\r$/, '');
       if (line.startsWith('data: ')) {
         payload.push(line.slice(6));
-      } else if (line.startsWith('event: ') || line.startsWith('id: ') || line.startsWith('retry: ')) {
-        continue;
+      } else if (
+        line.startsWith('event: ') ||
+        line.startsWith('id: ') ||
+        line.startsWith('retry: ')
+      ) {
       } else if (line) {
         payload.push(line);
       }

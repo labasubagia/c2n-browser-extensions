@@ -14,7 +14,11 @@ import {
 } from '@/lib/storage';
 import type { GenerationRecord } from '@/lib/types';
 
-function record(id: string, status: GenerationRecord['status'], createdAt: string): GenerationRecord {
+function record(
+  id: string,
+  status: GenerationRecord['status'],
+  createdAt: string,
+): GenerationRecord {
   return {
     id,
     conversationId: 'conv',
@@ -36,7 +40,10 @@ beforeEach(async () => {
 describe('generation storage', () => {
   it('round-trips a generation', async () => {
     await putGeneration(record('gen-1', 'pending', '2026-01-01T00:00:00.000Z'));
-    expect(await getGeneration('gen-1')).toMatchObject({ id: 'gen-1', status: 'pending' });
+    expect(await getGeneration('gen-1')).toMatchObject({
+      id: 'gen-1',
+      status: 'pending',
+    });
     expect(await getGenerationsByIds(['gen-1', 'missing'])).toHaveLength(1);
   });
 
@@ -45,7 +52,10 @@ describe('generation storage', () => {
     await putGeneration(record('failed', 'failed', '2026-01-01T00:00:00.000Z'));
     await putGeneration(record('done', 'uploaded', '2026-01-01T00:00:00.000Z'));
 
-    expect((await getPendingGenerations(10)).map((item) => item.id)).toEqual(['failed', 'later']);
+    expect((await getPendingGenerations(10)).map((item) => item.id)).toEqual([
+      'failed',
+      'later',
+    ]);
     expect(await getPendingCount()).toBe(2);
   });
 
@@ -66,9 +76,15 @@ describe('generation storage', () => {
 
 describe('metadata storage', () => {
   it('stores and clears Notion data source cache entries', async () => {
-    await setMeta('notion:dataSources:db', { ids: ['one'], expiresAt: Date.now() + 1000 });
+    await setMeta('notion:dataSources:db', {
+      ids: ['one'],
+      expiresAt: Date.now() + 1000,
+    });
     await setMeta('other', 'keep');
-    expect(await getMeta('notion:dataSources:db')).toEqual({ ids: ['one'], expiresAt: expect.any(Number) });
+    expect(await getMeta('notion:dataSources:db')).toEqual({
+      ids: ['one'],
+      expiresAt: expect.any(Number),
+    });
 
     await clearNotionCache();
 

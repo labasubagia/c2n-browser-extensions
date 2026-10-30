@@ -1,4 +1,4 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 import type {
   GenerationRecord,
   GenerationStatus,
@@ -40,13 +40,17 @@ function database(): Promise<IDBPDatabase<C2nDatabase>> {
   if (!databasePromise) {
     databasePromise = openDB<C2nDatabase>(DATABASE_NAME, DATABASE_VERSION, {
       upgrade(db) {
-        const generations = db.createObjectStore('generations', { keyPath: 'id' });
+        const generations = db.createObjectStore('generations', {
+          keyPath: 'id',
+        });
         generations.createIndex('by-status', 'status');
         generations.createIndex('by-created-at', 'createdAt');
         db.createObjectStore('meta', { keyPath: 'key' });
         const runs = db.createObjectStore('runs', { keyPath: 'id' });
         runs.createIndex('by-started-at', 'startedAt');
-        const libraryRuns = db.createObjectStore('libraryRuns', { keyPath: 'id' });
+        const libraryRuns = db.createObjectStore('libraryRuns', {
+          keyPath: 'id',
+        });
         libraryRuns.createIndex('by-started-at', 'startedAt');
       },
     });
@@ -54,7 +58,9 @@ function database(): Promise<IDBPDatabase<C2nDatabase>> {
   return databasePromise;
 }
 
-export async function getGeneration(id: string): Promise<GenerationRecord | undefined> {
+export async function getGeneration(
+  id: string,
+): Promise<GenerationRecord | undefined> {
   return (await database()).get('generations', id);
 }
 
@@ -62,16 +68,23 @@ export async function putGeneration(record: GenerationRecord): Promise<void> {
   await (await database()).put('generations', record);
 }
 
-export async function putGenerations(records: GenerationRecord[]): Promise<void> {
+export async function putGenerations(
+  records: GenerationRecord[],
+): Promise<void> {
   if (!records.length) {
     return;
   }
   const db = await database();
   const transaction = db.transaction('generations', 'readwrite');
-  await Promise.all([...records.map((record) => transaction.store.put(record)), transaction.done]);
+  await Promise.all([
+    ...records.map((record) => transaction.store.put(record)),
+    transaction.done,
+  ]);
 }
 
-export async function getGenerationsByIds(ids: string[]): Promise<GenerationRecord[]> {
+export async function getGenerationsByIds(
+  ids: string[],
+): Promise<GenerationRecord[]> {
   if (!ids.length) {
     return [];
   }
@@ -79,16 +92,24 @@ export async function getGenerationsByIds(ids: string[]): Promise<GenerationReco
   const transaction = db.transaction('generations', 'readonly');
   const records = await Promise.all(ids.map((id) => transaction.store.get(id)));
   await transaction.done;
-  return records.filter((record): record is GenerationRecord => Boolean(record));
+  return records.filter((record): record is GenerationRecord =>
+    Boolean(record),
+  );
 }
 
 export async function getAllGenerations(): Promise<GenerationRecord[]> {
   return (await database()).getAll('generations');
 }
 
-export async function getPendingGenerations(limit: number): Promise<GenerationRecord[]> {
+export async function getPendingGenerations(
+  limit: number,
+): Promise<GenerationRecord[]> {
   const db = await database();
-  const pending = await db.getAllFromIndex('generations', 'by-status', 'pending');
+  const pending = await db.getAllFromIndex(
+    'generations',
+    'by-status',
+    'pending',
+  );
   const failed = await db.getAllFromIndex('generations', 'by-status', 'failed');
   return [...pending, ...failed]
     .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
@@ -97,7 +118,11 @@ export async function getPendingGenerations(limit: number): Promise<GenerationRe
 
 export async function getPendingCount(): Promise<number> {
   const db = await database();
-  const pending = await db.countFromIndex('generations', 'by-status', 'pending');
+  const pending = await db.countFromIndex(
+    'generations',
+    'by-status',
+    'pending',
+  );
   const failed = await db.countFromIndex('generations', 'by-status', 'failed');
   return pending + failed;
 }
@@ -116,7 +141,10 @@ export async function markGenerationUploaded(id: string): Promise<void> {
   });
 }
 
-export async function markGenerationFailed(id: string, error: string): Promise<void> {
+export async function markGenerationFailed(
+  id: string,
+  error: string,
+): Promise<void> {
   const db = await database();
   const record = await db.get('generations', id);
   if (!record) {
@@ -166,7 +194,10 @@ export async function saveRun(record: SyncRunRecord): Promise<void> {
 export async function getRecentRuns(limit = 10): Promise<SyncRunRecord[]> {
   const db = await database();
   const out: SyncRunRecord[] = [];
-  let cursor = await db.transaction('runs').store.index('by-started-at').openCursor(null, 'prev');
+  let cursor = await db
+    .transaction('runs')
+    .store.index('by-started-at')
+    .openCursor(null, 'prev');
   while (cursor && out.length < limit) {
     out.push(cursor.value);
     cursor = await cursor.continue();
@@ -178,7 +209,9 @@ export async function saveLibraryRun(record: LibraryRunRecord): Promise<void> {
   await (await database()).put('libraryRuns', record);
 }
 
-export async function getRecentLibraryRuns(limit = 10): Promise<LibraryRunRecord[]> {
+export async function getRecentLibraryRuns(
+  limit = 10,
+): Promise<LibraryRunRecord[]> {
   const db = await database();
   const out: LibraryRunRecord[] = [];
   let cursor = await db

@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
-import { isStateUpdate, openOptionsPage, openPage, sendMessage, type RuntimeStatus } from '@/lib/messages';
+import {
+  isStateUpdate,
+  openOptionsPage,
+  openPage,
+  type RuntimeStatus,
+  sendMessage,
+} from '@/lib/messages';
+import { loadSettings, saveSettings } from '@/lib/settings';
 import type { SyncState } from '@/lib/types';
 import { errorMessage } from '@/lib/util';
-import { loadSettings, saveSettings } from '@/lib/settings';
 
 function formatDateTime(value: number | undefined): string {
   if (!value) {
@@ -86,7 +92,9 @@ export default function App() {
     const listener = (message: unknown) => {
       if (isStateUpdate(message)) {
         setStatus((current) =>
-          current ? { ...current, sync: message.sync, library: message.library } : current,
+          current
+            ? { ...current, sync: message.sync, library: message.library }
+            : current,
         );
       }
       return false;
@@ -166,7 +174,9 @@ export default function App() {
       {!authOk && (
         <div className="banner banner--warn stack stack--tight">
           <strong>
-            {status.auth.capturedAt ? 'ChatGPT session expired' : 'Waiting for a ChatGPT session'}
+            {status.auth.capturedAt
+              ? 'ChatGPT session expired'
+              : 'Waiting for a ChatGPT session'}
           </strong>
           <span>
             {status.auth.capturedAt
@@ -184,7 +194,11 @@ export default function App() {
       {!configured && (
         <div className="banner banner--info row row--between">
           <span>Notion is not configured yet.</span>
-          <button className="btn btn--sm" onClick={openOptionsPage} type="button">
+          <button
+            className="btn btn--sm"
+            onClick={openOptionsPage}
+            type="button"
+          >
             Settings
           </button>
         </div>
@@ -227,12 +241,15 @@ export default function App() {
           <div className="banner banner--warn stack stack--tight">
             <strong>A previous run was interrupted</strong>
             <span>
-              Resume continues from the saved checkpoint. Already-uploaded images are skipped.
+              Resume continues from the saved checkpoint. Already-uploaded
+              images are skipped.
             </span>
             <div>
               <button
                 className="btn btn--primary btn--sm"
-                disabled={Boolean(busy) || !authOk || !configured || libraryRunning}
+                disabled={
+                  Boolean(busy) || !authOk || !configured || libraryRunning
+                }
                 onClick={() => void start(true)}
                 type="button"
               >
@@ -245,7 +262,10 @@ export default function App() {
         {(running || status.sync.total > 0) && (
           <div className="stack stack--tight">
             <div className="progress" aria-hidden="true">
-              <div className="progress__bar" style={{ width: `${progress}%` }} />
+              <div
+                className="progress__bar"
+                style={{ width: `${progress}%` }}
+              />
             </div>
             <div className="row row--between small muted">
               <span>
@@ -257,7 +277,8 @@ export default function App() {
         )}
 
         <p className="small muted" style={{ overflowWrap: 'anywhere' }}>
-          {status.sync.message || 'Sync runs only when you ask. Nothing is uploaded automatically.'}
+          {status.sync.message ||
+            'Sync runs only when you ask. Nothing is uploaded automatically.'}
         </p>
 
         <div className="stats">
@@ -281,8 +302,8 @@ export default function App() {
 
         {errors.length > 0 && (
           <ul className="error-list">
-            {errors.map((entry, index) => (
-              <li key={`${entry.at}-${index}`}>
+            {errors.map((entry, _index) => (
+              <li key={entry.id}>
                 <span className="stage-tag">{errorStage(entry.stage)}</span>
                 {entry.fileName !== '—' ? `${entry.fileName}: ` : ''}
                 {entry.message}
@@ -300,9 +321,12 @@ export default function App() {
               onChange={(event) => void toggleDeleteConvs(event.target.checked)}
             />
             <span className="check__body">
-              <span className="check__title">Delete conversations after sync</span>
+              <span className="check__title">
+                Delete conversations after sync
+              </span>
               <span className="check__desc">
-                After all images in a conversation reach Notion, delete it from ChatGPT.
+                After all images in a conversation reach Notion, delete it from
+                ChatGPT.
               </span>
             </span>
           </label>
@@ -320,7 +344,9 @@ export default function App() {
           ) : (
             <button
               className="btn btn--primary btn--wide"
-              disabled={Boolean(busy) || !authOk || !configured || libraryRunning}
+              disabled={
+                Boolean(busy) || !authOk || !configured || libraryRunning
+              }
               onClick={() => void start(false)}
               type="button"
             >
@@ -334,14 +360,20 @@ export default function App() {
         <div className="card__head" style={{ marginBottom: 2 }}>
           <span className="card__title">Accounts</span>
           <span className="spacer" />
-          <button className="btn btn--ghost btn--sm" onClick={openOptionsPage} type="button">
+          <button
+            className="btn btn--ghost btn--sm"
+            onClick={openOptionsPage}
+            type="button"
+          >
             Settings
           </button>
         </div>
         <div className="row row--between small">
           <span>ChatGPT</span>
           {authOk ? (
-            <span className="badge badge--ok">{status.auth.email ?? 'Session captured'}</span>
+            <span className="badge badge--ok">
+              {status.auth.email ?? 'Session captured'}
+            </span>
           ) : (
             <span className="badge badge--bad">No token</span>
           )}
@@ -349,7 +381,9 @@ export default function App() {
         {authOk && (
           <div className="small muted">
             Token refreshed {formatDateTime(status.auth.lastSeenAt)}
-            {status.auth.expiresAt ? ` · expires ${formatDateTime(status.auth.expiresAt)}` : ''}
+            {status.auth.expiresAt
+              ? ` · expires ${formatDateTime(status.auth.expiresAt)}`
+              : ''}
           </div>
         )}
         <div className="divider" />
@@ -367,18 +401,30 @@ export default function App() {
 
       {status.lastRun && !running && (
         <div className="small muted">
-          Last run {formatDateTime(status.lastRun.finishedAt)}: {status.lastRun.uploaded} uploaded,{' '}
-          {status.lastRun.skipped} skipped, {status.lastRun.failed} failed
-          {status.lastRun.deleted ? `, ${status.lastRun.deleted} conversation${status.lastRun.deleted === 1 ? '' : 's'} deleted` : ''}.
+          Last run {formatDateTime(status.lastRun.finishedAt)}:{' '}
+          {status.lastRun.uploaded} uploaded, {status.lastRun.skipped} skipped,{' '}
+          {status.lastRun.failed} failed
+          {status.lastRun.deleted
+            ? `, ${status.lastRun.deleted} conversation${status.lastRun.deleted === 1 ? '' : 's'} deleted`
+            : ''}
+          .
         </div>
       )}
 
       <div className="footer">
-        <button className="btn btn--ghost btn--sm" onClick={() => openPage('library.html')} type="button">
+        <button
+          className="btn btn--ghost btn--sm"
+          onClick={() => openPage('library.html')}
+          type="button"
+        >
           Library cleanup
         </button>
         <span className="spacer" />
-        <a href="https://github.com/labasubagia/c2n" target="_blank" rel="noreferrer">
+        <a
+          href="https://github.com/labasubagia/c2n"
+          target="_blank"
+          rel="noreferrer"
+        >
           c2n
         </a>
       </div>

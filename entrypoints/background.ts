@@ -1,6 +1,11 @@
-import { defineBackground } from 'wxt/utils/define-background';
 import { browser } from 'wxt/browser';
-import { clearAuthSession, getAuthStatus, saveObservedToken, setAuthEmail } from '@/lib/auth';
+import { defineBackground } from 'wxt/utils/define-background';
+import {
+  clearAuthSession,
+  getAuthStatus,
+  saveObservedToken,
+  setAuthEmail,
+} from '@/lib/auth';
 import { getMe } from '@/lib/chatgpt';
 import {
   cancelLibraryOperation,
@@ -8,18 +13,22 @@ import {
   deleteScannedLibrary,
   getLastLibraryScan,
   getLibraryState,
+  type LibraryScanData,
   restoreLibraryState,
   scanLibrary,
   setLibraryStateListener,
-  type LibraryScanData,
 } from '@/lib/library';
-import {
-  type ExtensionMessage,
-  type RuntimeStatus,
-  type ScanResponse,
+import type {
+  ExtensionMessage,
+  RuntimeStatus,
+  ScanResponse,
 } from '@/lib/messages';
 import { NotionClient } from '@/lib/notion';
-import { isNotionConfigured, loadSettings, validateSettings } from '@/lib/settings';
+import {
+  isNotionConfigured,
+  loadSettings,
+  validateSettings,
+} from '@/lib/settings';
 import { getPendingCount, getRecentRuns } from '@/lib/storage';
 import {
   cancelSync,
@@ -36,7 +45,11 @@ let emailLookupToken: string | null = null;
 
 function broadcastStates(sync: SyncState, library: LibraryState): void {
   void browser.runtime
-    .sendMessage({ type: 'STATE_UPDATE', sync, library } satisfies ExtensionMessage)
+    .sendMessage({
+      type: 'STATE_UPDATE',
+      sync,
+      library,
+    } satisfies ExtensionMessage)
     .catch(() => {
       // No UI is open; state is persisted and will be read on demand.
     });
@@ -105,7 +118,11 @@ async function buildStatus(): Promise<RuntimeStatus> {
     library: getLibraryState(),
     lastRun: runs[0],
     scan: scan
-      ? { query: (scan as LibraryScanData).query, count: scan.items.length, scannedAt: scan.scannedAt }
+      ? {
+          query: (scan as LibraryScanData).query,
+          count: scan.items.length,
+          scannedAt: scan.scannedAt,
+        }
       : null,
     version: browser.runtime.getManifest().version,
   };
@@ -136,7 +153,10 @@ async function handleMessage(
 
     case 'START_SYNC': {
       if (getLibraryState().running) {
-        return { ok: false, error: 'Wait for the library operation to finish before syncing.' };
+        return {
+          ok: false,
+          error: 'Wait for the library operation to finish before syncing.',
+        };
       }
       const result = await startSync({ resume: Boolean(message.resume) });
       return result;
@@ -151,12 +171,22 @@ async function handleMessage(
       if (errors.length) {
         return {
           ok: false,
-          checks: errors.map((detail) => ({ label: 'Settings', ok: false, detail })),
+          checks: errors.map((detail) => ({
+            label: 'Settings',
+            ok: false,
+            detail,
+          })),
           error: errors[0],
         };
       }
-      const client = new NotionClient(settings.notion.apiKey, settings.notion.version);
-      return client.validateDatabase(settings.notion.databaseId, AbortSignal.timeout(30_000));
+      const client = new NotionClient(
+        settings.notion.apiKey,
+        settings.notion.version,
+      );
+      return client.validateDatabase(
+        settings.notion.databaseId,
+        AbortSignal.timeout(30_000),
+      );
     }
 
     case 'SCAN_LIBRARY': {
@@ -165,7 +195,8 @@ async function handleMessage(
           ok: false,
           items: [],
           total: 0,
-          error: 'Wait for the current sync to finish before scanning the library.',
+          error:
+            'Wait for the current sync to finish before scanning the library.',
         } satisfies ScanResponse;
       }
       const result: ScanResponse = await scanLibrary(message.query ?? '');
@@ -175,7 +206,11 @@ async function handleMessage(
 
     case 'DELETE_LIBRARY': {
       if (getSyncState().running) {
-        return { ok: false, error: 'Wait for the current sync to finish before deleting library images.' };
+        return {
+          ok: false,
+          error:
+            'Wait for the current sync to finish before deleting library images.',
+        };
       }
       const result = await deleteScannedLibrary();
       broadcastStates(getSyncState(), getLibraryState());
@@ -202,9 +237,18 @@ async function handleMessage(
 export default defineBackground(() => {
   setSyncStateListener((sync) => {
     broadcastStates(sync, getLibraryState());
-    if (!sync.running && (sync.phase === 'done' || sync.phase === 'error' || sync.phase === 'cancelled')) {
+    if (
+      !sync.running &&
+      (sync.phase === 'done' ||
+        sync.phase === 'error' ||
+        sync.phase === 'cancelled')
+    ) {
       const title =
-        sync.phase === 'done' ? 'c2n sync finished' : sync.phase === 'cancelled' ? 'c2n sync cancelled' : 'c2n sync failed';
+        sync.phase === 'done'
+          ? 'c2n sync finished'
+          : sync.phase === 'cancelled'
+            ? 'c2n sync cancelled'
+            : 'c2n sync failed';
       void notify(title, sync.message);
     }
   });
@@ -218,14 +262,24 @@ export default defineBackground(() => {
   })();
 
   browser.runtime.onMessage.addListener(
-    (message: ExtensionMessage, sender: { tab?: { url?: string }; url?: string }, sendResponse: (response: unknown) => void) => {
-      if (!message || typeof message !== 'object' || typeof message.type !== 'string') {
+    (
+      message: ExtensionMessage,
+      sender: { tab?: { url?: string }; url?: string },
+      sendResponse: (response: unknown) => void,
+    ) => {
+      if (
+        !message ||
+        typeof message !== 'object' ||
+        typeof message.type !== 'string'
+      ) {
         return false;
       }
       ready
         .then(() => handleMessage(message, sender))
         .then((response) => sendResponse(response))
-        .catch((error: unknown) => sendResponse({ ok: false, error: errorMessage(error) }));
+        .catch((error: unknown) =>
+          sendResponse({ ok: false, error: errorMessage(error) }),
+        );
       return true;
     },
   );
