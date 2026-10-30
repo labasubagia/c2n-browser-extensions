@@ -7,6 +7,7 @@ import {
   type RuntimeStatus,
   sendMessage,
 } from '@/lib/messages';
+import { shouldRedirectToChatGPT } from '@/lib/popup-redirect';
 import { loadSettings, saveSettings } from '@/lib/settings';
 import type { SyncState } from '@/lib/types';
 import { errorMessage } from '@/lib/util';
@@ -93,7 +94,7 @@ export default function App() {
           active: true,
           currentWindow: true,
         });
-        if (tab?.url && /^https:\/\/([\w-]+\.)*chatgpt\.com/.test(tab.url)) {
+        if (!shouldRedirectToChatGPT(tab?.url)) {
           return;
         }
         const [existing] = await browser.tabs.query({
