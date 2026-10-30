@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import {
   isStateUpdate,
@@ -83,7 +83,34 @@ export default function App() {
       setError(errorMessage(loadError));
     }
   }, []);
-
+  const redirectStarted = useRef(false);
+  useEffect(() => {
+    if (redirectStarted.current) return;
+    redirectStarted.current = true;
+    void (async () => {
+      try {
+        const [tab] = await browser.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        if (tab?.url && /^https:\/\/([\w-]+\.)*chatgpt\.com/.test(tab.url)) {
+          return;
+        }
+        const [existing] = await browser.tabs.query({
+          url: 'https://chatgpt.com/*',
+        });
+        if (existing?.id) {
+          await browser.tabs.update(existing.id, { active: true });
+        } else {
+          await browser.tabs.create({ url: 'https://chatgpt.com/' });
+        }
+        window.close();
+      } catch {
+        redirectStarted.current = false;
+        // keep popup open on query failure
+      }
+    })();
+  }, []);
   useEffect(() => {
     void refresh();
     const timer = window.setInterval(() => {
