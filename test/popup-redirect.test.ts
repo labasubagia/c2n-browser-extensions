@@ -5,6 +5,8 @@ describe('shouldRedirectToChatGPT', () => {
   it('returns false for chatgpt.com URLs', () => {
     expect(shouldRedirectToChatGPT('https://chatgpt.com/')).toBe(false);
     expect(shouldRedirectToChatGPT('https://chatgpt.com:8443/')).toBe(false);
+    expect(shouldRedirectToChatGPT('https://chatgpt.com')).toBe(false);
+    expect(shouldRedirectToChatGPT('https://chatgpt.com:8443')).toBe(false);
     expect(shouldRedirectToChatGPT('https://chatgpt.com:8443/c/abc')).toBe(
       false,
     );

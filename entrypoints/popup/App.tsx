@@ -100,7 +100,7 @@ export default function App() {
         const [existing] = await browser.tabs.query({
           url: ['https://chatgpt.com/*', 'https://*.chatgpt.com/*'],
         });
-        if (existing?.id) {
+        if (existing?.id != null) {
           await browser.tabs.update(existing.id, { active: true });
           if (existing.windowId != null) {
             await browser.windows.update(existing.windowId, { focused: true });
