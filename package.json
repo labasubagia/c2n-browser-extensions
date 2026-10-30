@@ -1,0 +1,33 @@
+{
+  "name": "c2n-browser-extension",
+  "description": "Sync ChatGPT image generations to Notion from Chrome and Edge.",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "crc-32": "^1.2.2",
+    "idb": "^8.0.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@wxt-dev/module-react": "^1.1.5",
+    "fake-indexeddb": "^6.2.7",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5",
+    "web-ext": "^10.5.0",
+    "wxt": "^0.21.3"
+  }
+}
