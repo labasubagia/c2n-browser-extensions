@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
     limit: 100,
     checkNotionDuplicates: true,
     embedPromptMetadata: true,
+    deleteConversationsAfterSync: false,
   },
   notifyOnFinish: true,
 };
@@ -47,6 +48,7 @@ export function normalizeSettings(settings: Settings): Settings {
       limit: Number.isFinite(limit) ? Math.min(500, Math.max(1, limit)) : DEFAULT_SETTINGS.sync.limit,
       checkNotionDuplicates: Boolean(settings.sync.checkNotionDuplicates),
       embedPromptMetadata: Boolean(settings.sync.embedPromptMetadata),
+      deleteConversationsAfterSync: Boolean(settings.sync.deleteConversationsAfterSync),
     },
     notifyOnFinish: Boolean(settings.notifyOnFinish),
   };
