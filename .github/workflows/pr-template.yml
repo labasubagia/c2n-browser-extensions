@@ -58,3 +58,15 @@ jobs:
           fi
 
           echo "PR description complies with template."
+  validate-commits:
+    name: Commitlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint PR title
+        run: echo "${{ github.event.pull_request.title }}" | npx commitlint
