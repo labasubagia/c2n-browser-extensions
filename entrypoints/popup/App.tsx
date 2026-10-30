@@ -195,14 +195,16 @@ export default function App() {
   const errors = status.sync.errors.slice(-4);
 
   return (
-    <div className="app">
-      <div className="row row--between">
+    <div className="flex flex-col gap-3 p-4">
+      <div className="flex items-center gap-2 flex-wrap justify-between">
         <Brand />
-        <span className="badge badge--neutral">v{status.version}</span>
+        <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-surface-muted text-muted border-edge">
+          v{status.version}
+        </span>
       </div>
 
       {!authOk && (
-        <div className="banner banner--warn stack stack--tight">
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-warning-soft text-ink border-[color-mix(in_srgb,var(--warning)_30%,transparent)] flex flex-col gap-1.5">
           <strong>
             {status.auth.capturedAt
               ? 'ChatGPT session expired'
@@ -214,7 +216,11 @@ export default function App() {
               : 'Open chatgpt.com, sign in, and reload the page. c2n observes the token ChatGPT already sends — there is no separate login.'}
           </span>
           <div>
-            <button className="btn btn--sm" onClick={openChatGpt} type="button">
+            <button
+              className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-2 py-1 text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-surface text-ink border-edge enabled:hover:bg-surface-muted"
+              onClick={openChatGpt}
+              type="button"
+            >
               Open ChatGPT
             </button>
           </div>
@@ -222,10 +228,10 @@ export default function App() {
       )}
 
       {!configured && (
-        <div className="banner banner--info row row--between">
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-accent-soft text-ink border-[color-mix(in_srgb,var(--accent)_25%,transparent)] flex items-center gap-2 flex-wrap justify-between">
           <span>Notion is not configured yet.</span>
           <button
-            className="btn btn--sm"
+            className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-2 py-1 text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-surface text-ink border-edge enabled:hover:bg-surface-muted"
             onClick={openOptionsPage}
             type="button"
           >
@@ -235,40 +241,50 @@ export default function App() {
       )}
 
       {libraryRunning && (
-        <div className="banner banner--warn">
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-warning-soft text-ink border-[color-mix(in_srgb,var(--warning)_30%,transparent)]">
           Library cleanup is running. Syncing is locked until it finishes.
         </div>
       )}
 
-      {error && <div className="banner banner--danger">{error}</div>}
-      {notice && <div className="banner banner--info">{notice}</div>}
+      {error && (
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-danger-soft text-ink border-[color-mix(in_srgb,var(--danger)_30%,transparent)]">
+          {error}
+        </div>
+      )}
+      {notice && (
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-accent-soft text-ink border-[color-mix(in_srgb,var(--accent)_25%,transparent)]">
+          {notice}
+        </div>
+      )}
 
-      <section className="card stack">
-        <div className="card__head">
-          <span className="card__title">Sync</span>
-          <span className="spacer" />
+      <section className="bg-surface border border-edge rounded-xl p-3.5 shadow-[var(--shadow)] flex flex-col gap-2.5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className="text-[13px] font-semibold tracking-[0.01em]">
+            Sync
+          </span>
+          <span className="flex-1" />
           <span
             className={
               running
-                ? 'badge badge--ok'
+                ? 'inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-accent-soft text-success border-[color-mix(in_srgb,var(--success)_25%,transparent)]'
                 : status.sync.failed
-                  ? 'badge badge--warn'
-                  : 'badge badge--neutral'
+                  ? 'inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-warning-soft text-warning border-[color-mix(in_srgb,var(--warning)_25%,transparent)]'
+                  : 'inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-surface-muted text-muted border-edge'
             }
           >
             {running ? 'Running' : phaseLabel(status.sync)}
           </span>
         </div>
 
-        <div className="row row--between small">
-          <span className="muted">
+        <div className="flex items-center gap-2 flex-wrap justify-between text-xs">
+          <span className="text-muted">
             {status.pending} generation{status.pending === 1 ? '' : 's'} waiting
           </span>
-          <span className="muted">Limit {status.settings.sync.limit}</span>
+          <span className="text-muted">Limit {status.settings.sync.limit}</span>
         </div>
 
         {interrupted && (
-          <div className="banner banner--warn stack stack--tight">
+          <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-warning-soft text-ink border-[color-mix(in_srgb,var(--warning)_30%,transparent)] flex flex-col gap-1.5">
             <strong>A previous run was interrupted</strong>
             <span>
               Resume continues from the saved checkpoint. Already-uploaded
@@ -276,7 +292,7 @@ export default function App() {
             </span>
             <div>
               <button
-                className="btn btn--primary btn--sm"
+                className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-2 py-1 text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-accent text-white dark:text-[#10201c] border-accent enabled:hover:bg-accent-strong enabled:hover:border-accent-strong"
                 disabled={
                   Boolean(busy) || !authOk || !configured || libraryRunning
                 }
@@ -290,14 +306,17 @@ export default function App() {
         )}
 
         {(running || status.sync.total > 0) && (
-          <div className="stack stack--tight">
-            <div className="progress" aria-hidden="true">
+          <div className="flex flex-col gap-1.5">
+            <div
+              className="h-[7px] rounded-full bg-surface-muted overflow-hidden border border-edge"
+              aria-hidden="true"
+            >
               <div
-                className="progress__bar"
+                className="h-full bg-accent rounded-full transition-[width] duration-200"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="row row--between small muted">
+            <div className="flex items-center gap-2 flex-wrap justify-between text-xs text-muted">
               <span>
                 {status.sync.current} / {status.sync.total || '—'} processed
               </span>
@@ -306,35 +325,53 @@ export default function App() {
           </div>
         )}
 
-        <p className="small muted" style={{ overflowWrap: 'anywhere' }}>
+        <p className="text-xs text-muted" style={{ overflowWrap: 'anywhere' }}>
           {status.sync.message ||
             'Sync runs only when you ask. Nothing is uploaded automatically.'}
         </p>
 
-        <div className="stats stats--two">
-          <div className="stat">
-            <div className="stat__value">{status.sync.uploaded}</div>
-            <div className="stat__label">Uploaded</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-surface-muted border border-edge rounded-lg px-2.25 py-1.75">
+            <div className="text-base font-semibold leading-[1.1] tabular-nums">
+              {status.sync.uploaded}
+            </div>
+            <div className="text-[10.5px] text-muted uppercase tracking-[0.06em] mt-0.5">
+              Uploaded
+            </div>
           </div>
-          <div className="stat">
-            <div className="stat__value">{status.sync.skipped}</div>
-            <div className="stat__label">Skipped</div>
+          <div className="bg-surface-muted border border-edge rounded-lg px-2.25 py-1.75">
+            <div className="text-base font-semibold leading-[1.1] tabular-nums">
+              {status.sync.skipped}
+            </div>
+            <div className="text-[10.5px] text-muted uppercase tracking-[0.06em] mt-0.5">
+              Skipped
+            </div>
           </div>
-          <div className="stat">
-            <div className="stat__value">{status.sync.failed}</div>
-            <div className="stat__label">Failed</div>
+          <div className="bg-surface-muted border border-edge rounded-lg px-2.25 py-1.75">
+            <div className="text-base font-semibold leading-[1.1] tabular-nums">
+              {status.sync.failed}
+            </div>
+            <div className="text-[10.5px] text-muted uppercase tracking-[0.06em] mt-0.5">
+              Failed
+            </div>
           </div>
-          <div className="stat">
-            <div className="stat__value">{status.sync.deleted}</div>
-            <div className="stat__label">Conversations deleted</div>
+          <div className="bg-surface-muted border border-edge rounded-lg px-2.25 py-1.75">
+            <div className="text-base font-semibold leading-[1.1] tabular-nums">
+              {status.sync.deleted}
+            </div>
+            <div className="text-[10.5px] text-muted uppercase tracking-[0.06em] mt-0.5">
+              Conversations deleted
+            </div>
           </div>
         </div>
 
         {errors.length > 0 && (
-          <ul className="error-list">
+          <ul className="flex flex-col gap-1.5 max-h-40 overflow-auto list-none m-0 p-0">
             {errors.map((entry, _index) => (
               <li key={entry.id}>
-                <span className="stage-tag">{errorStage(entry.stage)}</span>
+                <span className="inline-block mr-1.5 px-1 rounded font-mono text-[10px] uppercase bg-[color-mix(in_srgb,currentColor_12%,transparent)]">
+                  {errorStage(entry.stage)}
+                </span>
                 {entry.fileName !== '—' ? `${entry.fileName}: ` : ''}
                 {entry.message}
               </li>
@@ -343,18 +380,19 @@ export default function App() {
         )}
 
         {!running && (
-          <label className="check">
+          <label className="flex items-start gap-2.25 py-2 border-t border-edge first:border-t-0 first:pt-0">
             <input
               type="checkbox"
+              className="mt-0.5 accent-accent"
               checked={deleteConvs}
               disabled={Boolean(busy) || libraryRunning}
               onChange={(event) => void toggleDeleteConvs(event.target.checked)}
             />
-            <span className="check__body">
-              <span className="check__title">
+            <span className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-[12.5px] font-semibold">
                 Delete conversations after sync
               </span>
-              <span className="check__desc">
+              <span className="text-[11.5px] text-muted">
                 Once every image in a conversation has been uploaded or was
                 already in Notion, deletes the whole conversation from ChatGPT.
                 Any failed upload keeps it.
@@ -362,10 +400,10 @@ export default function App() {
             </span>
           </label>
         )}
-        <div className="row">
+        <div className="flex items-center gap-2 flex-wrap">
           {running ? (
             <button
-              className="btn btn--danger btn--wide"
+              className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-3 py-1.75 text-[12.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed w-full bg-danger text-white border-danger enabled:hover:brightness-110"
               disabled={busy === 'cancel'}
               onClick={() => void cancel()}
               type="button"
@@ -374,7 +412,7 @@ export default function App() {
             </button>
           ) : (
             <button
-              className="btn btn--primary btn--wide"
+              className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-3 py-1.75 text-[12.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed w-full bg-accent text-white dark:text-[#10201c] border-accent enabled:hover:bg-accent-strong enabled:hover:border-accent-strong"
               disabled={
                 Boolean(busy) || !authOk || !configured || libraryRunning
               }
@@ -387,51 +425,60 @@ export default function App() {
         </div>
       </section>
 
-      <section className="card stack stack--tight">
-        <div className="card__head" style={{ marginBottom: 2 }}>
-          <span className="card__title">Accounts</span>
-          <span className="spacer" />
+      <section className="bg-surface border border-edge rounded-xl p-3.5 shadow-[var(--shadow)] flex flex-col gap-1.5">
+        <div
+          className="flex items-center gap-2 mb-2.5"
+          style={{ marginBottom: 2 }}
+        >
+          <span className="text-[13px] font-semibold tracking-[0.01em]">
+            Accounts
+          </span>
+          <span className="flex-1" />
           <button
-            className="btn btn--ghost btn--sm"
+            className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-2 py-1 text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-transparent text-muted border-transparent enabled:hover:bg-surface-muted enabled:hover:text-ink"
             onClick={openOptionsPage}
             type="button"
           >
             Settings
           </button>
         </div>
-        <div className="row row--between small">
+        <div className="flex items-center gap-2 flex-wrap justify-between text-xs">
           <span>ChatGPT</span>
           {authOk ? (
-            <span className="badge badge--ok">
+            <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-accent-soft text-success border-[color-mix(in_srgb,var(--success)_25%,transparent)]">
               {status.auth.email ?? 'Session captured'}
             </span>
           ) : (
-            <span className="badge badge--bad">No token</span>
+            <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-danger-soft text-danger border-[color-mix(in_srgb,var(--danger)_25%,transparent)]">
+              No token
+            </span>
           )}
         </div>
         {authOk && (
-          <div className="small muted">
+          <div className="text-xs text-muted">
             Token refreshed {formatDateTime(status.auth.lastSeenAt)}
             {status.auth.expiresAt
               ? ` · expires ${formatDateTime(status.auth.expiresAt)}`
               : ''}
           </div>
         )}
-        <div className="divider" />
-        <div className="row row--between small">
+        <div className="h-px bg-edge my-0.5" />
+        <div className="flex items-center gap-2 flex-wrap justify-between text-xs">
           <span>Notion</span>
           {configured ? (
-            <span className="badge badge--ok">
+            <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-accent-soft text-success border-[color-mix(in_srgb,var(--success)_25%,transparent)]">
               DB {status.settings.notion.databaseId.slice(0, 8)}…
             </span>
           ) : (
-            <span className="badge badge--bad">Not configured</span>
+            <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-danger-soft text-danger border-[color-mix(in_srgb,var(--danger)_25%,transparent)]">
+              Not configured
+            </span>
           )}
         </div>
       </section>
 
       {status.lastRun && !running && (
-        <div className="small muted">
+        <div className="text-xs text-muted">
           Last run {formatDateTime(status.lastRun.finishedAt)}:{' '}
           {status.lastRun.uploaded} uploaded, {status.lastRun.skipped} skipped,{' '}
           {status.lastRun.failed} failed
@@ -442,15 +489,15 @@ export default function App() {
         </div>
       )}
 
-      <div className="footer">
+      <div className="flex items-center gap-2.5 pt-0.5 text-muted text-[11.5px]">
         <button
-          className="btn btn--ghost btn--sm"
+          className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-2 py-1 text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-transparent text-muted border-transparent enabled:hover:bg-surface-muted enabled:hover:text-ink"
           onClick={() => openPage('library.html')}
           type="button"
         >
           Library cleanup
         </button>
-        <span className="spacer" />
+        <span className="flex-1" />
         <a
           href="https://github.com/labasubagia/c2n"
           target="_blank"
@@ -465,11 +512,15 @@ export default function App() {
 
 function Brand() {
   return (
-    <div className="brand">
-      <div className="brand__mark">c2n</div>
+    <div className="flex items-center gap-2.5">
+      <div className="grid place-items-center size-[34px] rounded-[10px] bg-accent text-bg font-bold text-[13px] tracking-[0.02em]">
+        c2n
+      </div>
       <div>
-        <div className="brand__title">ChatGPT → Notion</div>
-        <div className="brand__subtitle">Manual image sync</div>
+        <div className="text-base font-semibold leading-tight">
+          ChatGPT → Notion
+        </div>
+        <div className="text-muted text-xs">Manual image sync</div>
       </div>
     </div>
   );

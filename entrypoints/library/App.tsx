@@ -147,27 +147,31 @@ export default function App() {
   const visibleItems = items.slice(0, PREVIEW_LIMIT);
 
   return (
-    <div className="app app--page">
-      <header className="stack">
-        <div className="row row--between">
-          <div className="brand">
-            <div className="brand__mark">c2n</div>
+    <div className="flex flex-col gap-4 max-w-[760px] mx-auto px-5 pt-7 pb-12">
+      <header className="flex flex-col gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="grid place-items-center size-[34px] rounded-[10px] bg-accent text-bg font-bold text-[13px] tracking-[0.02em]">
+              c2n
+            </div>
             <div>
-              <div className="brand__title">Library cleanup</div>
-              <div className="brand__subtitle">
+              <div className="text-base font-semibold leading-tight">
+                Library cleanup
+              </div>
+              <div className="text-muted text-xs">
                 Delete images from ChatGPT’s library
               </div>
             </div>
           </div>
           <button
-            className="btn btn--sm"
+            className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-2 py-1 text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-surface text-ink border-edge enabled:hover:bg-surface-muted"
             onClick={openOptionsPage}
             type="button"
           >
             Settings
           </button>
         </div>
-        <p className="page-lead">
+        <p className="text-muted text-[13px] max-w-[62ch]">
           Scan the ChatGPT image library, review exactly what matched, then type
           a confirmation to delete. Deletion is a soft delete in ChatGPT’s own
           library; it does not touch conversations or Notion pages.
@@ -175,44 +179,58 @@ export default function App() {
       </header>
 
       {!status?.auth.present && (
-        <div className="banner banner--warn">
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-warning-soft text-ink border-[color-mix(in_srgb,var(--warning)_30%,transparent)]">
           No ChatGPT session captured. Open chatgpt.com, sign in, and reload the
           page before scanning.
         </div>
       )}
 
       {syncRunning && (
-        <div className="banner banner--warn">
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-warning-soft text-ink border-[color-mix(in_srgb,var(--warning)_30%,transparent)]">
           A sync is running. Library cleanup is locked until it finishes.
         </div>
       )}
 
-      {error && <div className="banner banner--danger">{error}</div>}
-      {notice && <div className="banner banner--info">{notice}</div>}
+      {error && (
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-danger-soft text-ink border-[color-mix(in_srgb,var(--danger)_30%,transparent)]">
+          {error}
+        </div>
+      )}
+      {notice && (
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-accent-soft text-ink border-[color-mix(in_srgb,var(--accent)_25%,transparent)]">
+          {notice}
+        </div>
+      )}
 
-      <section className="card stack stack--tight">
-        <div className="warning-title">Destructive action</div>
-        <p className="small">
+      <section className="bg-surface border border-edge rounded-xl p-3.5 shadow-[var(--shadow)] flex flex-col gap-1.5">
+        <div className="text-danger font-bold">Destructive action</div>
+        <p className="text-xs">
           Images matching the query are removed from the ChatGPT library and may
           disappear from image pickers. Start with a narrow query, confirm the
           preview, and keep the extension open until the operation finishes.
         </p>
       </section>
 
-      <section className="card stack">
-        <div className="card__head">
-          <span className="card__title">Scan Library</span>
-          <span className="spacer" />
+      <section className="bg-surface border border-edge rounded-xl p-3.5 shadow-[var(--shadow)] flex flex-col gap-2.5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className="text-[13px] font-semibold tracking-[0.01em]">
+            Scan Library
+          </span>
+          <span className="flex-1" />
           {library?.phase === 'scanning' && (
-            <span className="badge badge--ok">Scanning</span>
+            <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-accent-soft text-success border-[color-mix(in_srgb,var(--success)_25%,transparent)]">
+              Scanning
+            </span>
           )}
           {library?.phase === 'deleting' && (
-            <span className="badge badge--warn">Deleting</span>
+            <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-warning-soft text-warning border-[color-mix(in_srgb,var(--warning)_25%,transparent)]">
+              Deleting
+            </span>
           )}
         </div>
-        <div className="row" style={{ flexWrap: 'nowrap' }}>
+        <div className="flex items-center gap-2" style={{ flexWrap: 'nowrap' }}>
           <input
-            className="input"
+            className="w-full font-[inherit] text-[13px] text-ink bg-surface border border-edge rounded-lg px-2.5 py-2 outline-none focus:border-accent focus:ring-3 focus:ring-[color-mix(in_srgb,var(--accent)_18%,transparent)]"
             placeholder="Filter by name or prompt (leave empty for the whole library)"
             value={query}
             disabled={scanning}
@@ -224,7 +242,7 @@ export default function App() {
             }}
           />
           <button
-            className="btn btn--primary"
+            className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-3 py-1.75 text-[12.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-accent text-white dark:text-[#10201c] border-accent enabled:hover:bg-accent-strong enabled:hover:border-accent-strong"
             disabled={
               Boolean(busy) || scanning || syncRunning || !status?.auth.present
             }
@@ -234,18 +252,18 @@ export default function App() {
             {busy === 'scan' ? 'Scanning…' : 'Scan'}
           </button>
         </div>
-        <span className="hint">
+        <span className="text-muted text-[11.5px]">
           Scanning only counts and lists items. Nothing is deleted until you
           confirm below.
         </span>
       </section>
 
       {library?.running && (
-        <section className="card stack stack--tight">
-          <div className="row row--between small">
+        <section className="bg-surface border border-edge rounded-xl p-3.5 shadow-[var(--shadow)] flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 flex-wrap justify-between text-xs">
             <span>{library.message}</span>
             <button
-              className="btn btn--sm"
+              className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-2 py-1 text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-surface text-ink border-edge enabled:hover:bg-surface-muted"
               disabled={busy === 'cancel'}
               onClick={() => void cancel()}
               type="button"
@@ -253,36 +271,56 @@ export default function App() {
               {busy === 'cancel' ? 'Cancelling…' : 'Cancel'}
             </button>
           </div>
-          <div className="progress">
-            <div className="progress__bar" style={{ width: `${progress}%` }} />
+          <div
+            className="h-[7px] rounded-full bg-surface-muted overflow-hidden border border-edge"
+            aria-hidden="true"
+          >
+            <div
+              className="h-full bg-accent rounded-full transition-[width] duration-200"
+              style={{ width: `${progress}%` }}
+            />
           </div>
-          <div className="stats">
-            <div className="stat">
-              <div className="stat__value">{library.total}</div>
-              <div className="stat__label">Matched</div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-surface-muted border border-edge rounded-lg px-2.25 py-1.75">
+              <div className="text-base font-semibold leading-[1.1] tabular-nums">
+                {library.total}
+              </div>
+              <div className="text-[10.5px] text-muted uppercase tracking-[0.06em] mt-0.5">
+                Matched
+              </div>
             </div>
-            <div className="stat">
-              <div className="stat__value">{library.deleted}</div>
-              <div className="stat__label">Deleted</div>
+            <div className="bg-surface-muted border border-edge rounded-lg px-2.25 py-1.75">
+              <div className="text-base font-semibold leading-[1.1] tabular-nums">
+                {library.deleted}
+              </div>
+              <div className="text-[10.5px] text-muted uppercase tracking-[0.06em] mt-0.5">
+                Deleted
+              </div>
             </div>
-            <div className="stat">
-              <div className="stat__value">{library.failed}</div>
-              <div className="stat__label">Failed</div>
+            <div className="bg-surface-muted border border-edge rounded-lg px-2.25 py-1.75">
+              <div className="text-base font-semibold leading-[1.1] tabular-nums">
+                {library.failed}
+              </div>
+              <div className="text-[10.5px] text-muted uppercase tracking-[0.06em] mt-0.5">
+                Failed
+              </div>
             </div>
           </div>
         </section>
       )}
 
       {items.length > 0 && (
-        <section className="card stack">
-          <div className="card__head">
-            <span className="card__title">2. Review preview</span>
-            <span className="spacer" />
-            <span className="badge badge--warn">
+        <section className="bg-surface border border-edge rounded-xl p-3.5 shadow-[var(--shadow)] flex flex-col gap-2.5">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="text-[13px] font-semibold tracking-[0.01em]">
+              2. Review preview
+            </span>
+            <span className="flex-1" />
+            <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-warning-soft text-warning border-[color-mix(in_srgb,var(--warning)_25%,transparent)]">
               {items.length} image{items.length === 1 ? '' : 's'}
             </span>
           </div>
-          <div className="small muted">
+          <div className="text-xs text-muted">
             {scannedQuery.trim() ? (
               <>
                 Matching <strong>“{scannedQuery.trim()}”</strong>
@@ -294,15 +332,20 @@ export default function App() {
             )}{' '}
             · scanned {new Date(scannedAt ?? Date.now()).toLocaleTimeString()}
           </div>
-          <div className="scroll-box">
+          <div className="max-h-70 overflow-auto border border-edge rounded-lg bg-surface">
             {visibleItems.map((item, index) => (
-              <div className="list-item" key={item.id}>
-                <span className="list-item__index">{index + 1}</span>
+              <div
+                className="flex gap-2 items-center px-2.5 py-1.5 text-xs border-t border-edge first:border-t-0 [overflow-wrap:anywhere]"
+                key={item.id}
+              >
+                <span className="text-muted tabular-nums min-w-[2.2em] text-right text-[11px]">
+                  {index + 1}
+                </span>
                 <span>{item.name}</span>
               </div>
             ))}
             {items.length > visibleItems.length && (
-              <div className="list-item muted">
+              <div className="flex gap-2 items-center px-2.5 py-1.5 text-xs border-t border-edge first:border-t-0 [overflow-wrap:anywhere] text-muted">
                 +{items.length - visibleItems.length} more not shown
               </div>
             )}
@@ -311,17 +354,22 @@ export default function App() {
       )}
 
       {items.length > 0 && (
-        <section className="card stack">
-          <div className="card__head">
-            <span className="card__title">3. Confirm deletion</span>
-            <span className="spacer" />
+        <section className="bg-surface border border-edge rounded-xl p-3.5 shadow-[var(--shadow)] flex flex-col gap-2.5">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="text-[13px] font-semibold tracking-[0.01em]">
+              3. Confirm deletion
+            </span>
+            <span className="flex-1" />
             {library?.failed ? (
-              <span className="badge badge--bad">{library.failed} failed</span>
+              <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-danger-soft text-danger border-[color-mix(in_srgb,var(--danger)_25%,transparent)]">
+                {library.failed} failed
+              </span>
             ) : null}
           </div>
-          <div className="confirm-box stack stack--tight">
-            <span className="small">
-              Type <span className="mono">{expected}</span> to delete{' '}
+          <div className="border border-[color-mix(in_srgb,var(--danger)_40%,var(--border))] bg-[color-mix(in_srgb,var(--danger-soft)_55%,var(--surface))] rounded-[10px] p-3 flex flex-col gap-1.5">
+            <span className="text-xs">
+              Type <span className="font-mono text-xs">{expected}</span> to
+              delete{' '}
               <strong>
                 {items.length} image{items.length === 1 ? '' : 's'}
               </strong>{' '}
@@ -337,7 +385,7 @@ export default function App() {
               .
             </span>
             <input
-              className="input mono"
+              className="w-full font-[inherit] text-[13px] text-ink bg-surface border border-edge rounded-lg px-2.5 py-2 outline-none focus:border-accent focus:ring-3 focus:ring-[color-mix(in_srgb,var(--accent)_18%,transparent)] font-mono text-xs"
               placeholder={expected}
               value={confirmation}
               disabled={scanning}
@@ -345,9 +393,9 @@ export default function App() {
               autoComplete="off"
               spellCheck={false}
             />
-            <div className="row">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
-                className="btn btn--danger"
+                className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-3 py-1.75 text-[12.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-danger text-white border-danger enabled:hover:brightness-110"
                 disabled={
                   !confirmationMatches ||
                   Boolean(busy) ||
@@ -362,7 +410,7 @@ export default function App() {
                   : `Delete ${items.length} image${items.length === 1 ? '' : 's'}`}
               </button>
               <button
-                className="btn btn--ghost"
+                className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-3 py-1.75 text-[12.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-transparent text-muted border-transparent enabled:hover:bg-surface-muted enabled:hover:text-ink"
                 disabled={Boolean(busy) || scanning}
                 onClick={() => {
                   setItems([]);
@@ -379,11 +427,16 @@ export default function App() {
       )}
 
       {library && library.errors.length > 0 && (
-        <section className="card stack stack--tight">
-          <span className="card__title">Errors</span>
-          <ul className="error-list">
+        <section className="bg-surface border border-edge rounded-xl p-3.5 shadow-[var(--shadow)] flex flex-col gap-1.5">
+          <span className="text-[13px] font-semibold tracking-[0.01em]">
+            Errors
+          </span>
+          <ul className="flex flex-col gap-1.5 max-h-40 overflow-auto list-none m-0 p-0">
             {library.errors.map((entry, _index) => (
-              <li key={entry.id}>
+              <li
+                key={entry.id}
+                className="text-[11.5px] p-1.5 rounded-[7px] bg-danger-soft text-danger [overflow-wrap:anywhere]"
+              >
                 {entry.fileName !== '—' ? `${entry.fileName}: ` : ''}
                 {entry.message}
               </li>
@@ -394,14 +447,16 @@ export default function App() {
 
       {library &&
         (library.phase === 'done' || library.phase === 'cancelled') && (
-          <div className="banner banner--info">{library.message}</div>
+          <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-accent-soft text-ink border-[color-mix(in_srgb,var(--accent)_25%,transparent)]">
+            {library.message}
+          </div>
         )}
 
-      <div className="footer">
+      <div className="flex items-center gap-2.5 pt-0.5 text-muted text-[11.5px]">
         <span>
           {status ? `${status.pending} generation(s) waiting to sync` : ''}
         </span>
-        <span className="spacer" />
+        <span className="flex-1" />
         <span>Deleting uses ChatGPT’s soft-delete endpoint.</span>
       </div>
     </div>

@@ -34,7 +34,7 @@
 - `lib/` — core engines and adapters (no WXT coupling).
 - `entrypoints/` — WXT entrypoints (background, content scripts, React UIs).
 - `test/` — Vitest suites (one file per lib module).
-- `assets/` — `app.css` shared UI style.
+- `assets/` — `app.css` Tailwind CSS v4 (`@import 'tailwindcss'`, tokens in `@theme`; no component classes — inline utilities in JSX. Don't hand-write plain CSS).
 - `public/icon/` — extension icons.
 - `docs/` — `architecture.md` (deep technical reference).
 - `.github/workflows/` — CI (`ci.yml`) and PR validation (`pr-template.yml`).
