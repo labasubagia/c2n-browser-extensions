@@ -69,13 +69,13 @@ State lives in IndexedDB (`c2n` database) in the extension origin. No image blob
 
 ### Settings
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| Recent generations to inspect | 100 | ChatGPT history window per run, 1–500. |
-| Check Notion for duplicates | on | Query `Name` before downloading. |
-| Embed prompt in PNG metadata | on | Adds a `Prompt` chunk to PNG files. |
-| Delete conversations after sync | off | After all images in a conversation upload, delete it from ChatGPT. |
-| Notify when a sync finishes | on | Browser notification on finish/failure. |
+| Setting                         | Default | Meaning                                                            |
+| ------------------------------- | ------- | ------------------------------------------------------------------ |
+| Recent generations to inspect   | 100     | ChatGPT history window per run, 1–500.                             |
+| Check Notion for duplicates     | on      | Query `Name` before downloading.                                   |
+| Embed prompt in PNG metadata    | on      | Adds a `Prompt` chunk to PNG files.                                |
+| Delete conversations after sync | off     | After all images in a conversation upload, delete it from ChatGPT. |
+| Notify when a sync finishes     | on      | Browser notification on finish/failure.                            |
 
 ## Library cleanup
 

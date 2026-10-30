@@ -1,7 +1,13 @@
 import { getUsableAuthSession } from './auth';
 import { deleteLibraryFile, getLibraryImages } from './chatgpt';
 import { deleteMeta, getMeta, saveLibraryRun, setMeta } from './storage';
-import type { LibraryItem, LibraryRunRecord, LibraryScanResult, LibraryState, RunError } from './types';
+import type {
+  LibraryItem,
+  LibraryRunRecord,
+  LibraryScanResult,
+  LibraryState,
+  RunError,
+} from './types';
 import { errorMessage, isAbortError } from './util';
 
 const STATE_KEY = 'libraryState';
@@ -34,7 +40,9 @@ let lastScan: LibraryScanData | null = null;
 let active: { id: string; controller: AbortController } | null = null;
 let listener: ((state: LibraryState) => void) | null = null;
 
-export function setLibraryStateListener(next: ((state: LibraryState) => void) | null): void {
+export function setLibraryStateListener(
+  next: ((state: LibraryState) => void) | null,
+): void {
   listener = next;
 }
 
@@ -70,7 +78,11 @@ export async function restoreLibraryState(): Promise<LibraryState> {
     getMeta<LibraryState>(STATE_KEY),
     getMeta<LibraryScanData>(SCAN_KEY),
   ]);
-  if (savedScan && Array.isArray(savedScan.items) && typeof savedScan.query === 'string') {
+  if (
+    savedScan &&
+    Array.isArray(savedScan.items) &&
+    typeof savedScan.query === 'string'
+  ) {
     lastScan = savedScan;
   }
   if (!saved || typeof saved !== 'object') {
@@ -87,7 +99,8 @@ export async function restoreLibraryState(): Promise<LibraryState> {
       ...state,
       running: false,
       phase: 'error',
-      message: 'The previous library operation was interrupted. Scan again to start over.',
+      message:
+        'The previous library operation was interrupted. Scan again to start over.',
       finishedAt: Date.now(),
     };
     await setMeta(STATE_KEY, state);
@@ -99,9 +112,16 @@ function ensureToken() {
   return getUsableAuthSession();
 }
 
-export async function scanLibrary(query: string): Promise<LibraryScanResult & { ok: boolean; error?: string }> {
+export async function scanLibrary(
+  query: string,
+): Promise<LibraryScanResult & { ok: boolean; error?: string }> {
   if (active) {
-    return { ok: false, items: [], total: 0, error: 'A library operation is already running.' };
+    return {
+      ok: false,
+      items: [],
+      total: 0,
+      error: 'A library operation is already running.',
+    };
   }
 
   const controller = new AbortController();
@@ -127,7 +147,9 @@ export async function scanLibrary(query: string): Promise<LibraryScanResult & { 
     runId,
     query,
     startedAt: Date.now(),
-    message: query.trim() ? `Scanning library for “${query.trim()}”…` : 'Scanning all library images…',
+    message: query.trim()
+      ? `Scanning library for “${query.trim()}”…`
+      : 'Scanning all library images…',
   };
   listener?.(state);
   await setMeta(STATE_KEY, state);
@@ -138,7 +160,12 @@ export async function scanLibrary(query: string): Promise<LibraryScanResult & { 
     const seenCursors = new Set<string>();
     let cursor: string | undefined;
     for (;;) {
-      const data = await getLibraryImages(session.token, query, cursor, controller.signal);
+      const data = await getLibraryImages(
+        session.token,
+        query,
+        cursor,
+        controller.signal,
+      );
       for (const item of data.items) {
         const key = item.id || `${item.fileId}:${item.name}`;
         if (!seenItems.has(key)) {
@@ -212,7 +239,10 @@ export function cancelLibraryOperation(): boolean {
   return true;
 }
 
-export async function deleteScannedLibrary(): Promise<{ ok: boolean; error?: string }> {
+export async function deleteScannedLibrary(): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
   if (active) {
     return { ok: false, error: 'A library operation is already running.' };
   }
@@ -221,7 +251,10 @@ export async function deleteScannedLibrary(): Promise<{ ok: boolean; error?: str
     return { ok: false, error: 'Scan the library before deleting anything.' };
   }
   if (!scan.items.length) {
-    return { ok: false, error: 'There is nothing to delete. Scan again first.' };
+    return {
+      ok: false,
+      error: 'There is nothing to delete. Scan again first.',
+    };
   }
 
   const controller = new AbortController();
@@ -301,7 +334,10 @@ export async function deleteScannedLibrary(): Promise<{ ok: boolean; error?: str
 
   try {
     await Promise.all(
-      Array.from({ length: Math.min(DELETE_CONCURRENCY, scan.items.length) }, () => worker()),
+      Array.from(
+        { length: Math.min(DELETE_CONCURRENCY, scan.items.length) },
+        () => worker(),
+      ),
     );
   } finally {
     active = null;

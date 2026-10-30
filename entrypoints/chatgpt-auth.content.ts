@@ -8,15 +8,20 @@ function isChatGptApiUrl(rawUrl: string): boolean {
   try {
     const url = new URL(rawUrl, location.href);
     return (
-      (url.hostname === 'chatgpt.com' || url.hostname.endsWith('.chatgpt.com')) &&
-      (url.pathname === '/backend-api' || url.pathname.startsWith('/backend-api/'))
+      (url.hostname === 'chatgpt.com' ||
+        url.hostname.endsWith('.chatgpt.com')) &&
+      (url.pathname === '/backend-api' ||
+        url.pathname.startsWith('/backend-api/'))
     );
   } catch {
     return false;
   }
 }
 
-function readHeader(headers: HeadersInit | undefined, name: string): string | undefined {
+function readHeader(
+  headers: HeadersInit | undefined,
+  name: string,
+): string | undefined {
   if (!headers) {
     return undefined;
   }
@@ -32,7 +37,9 @@ function readHeader(headers: HeadersInit | undefined, name: string): string | un
     }
     return undefined;
   }
-  for (const [key, value] of Object.entries(headers as Record<string, string>)) {
+  for (const [key, value] of Object.entries(
+    headers as Record<string, string>,
+  )) {
     if (key.toLowerCase() === wanted) {
       return value;
     }
@@ -44,7 +51,10 @@ function normalizeToken(raw: string | undefined): string | undefined {
   if (!raw) {
     return undefined;
   }
-  const token = raw.trim().replace(/^Bearer\s+/i, '').trim();
+  const token = raw
+    .trim()
+    .replace(/^Bearer\s+/i, '')
+    .trim();
   if (token.length < 20 || token.length > 8192 || /\s/.test(token)) {
     return undefined;
   }
@@ -120,7 +130,10 @@ export default defineContentScript({
       return originalFetch(input, init);
     };
 
-    const xhrState = new WeakMap<XMLHttpRequest, { url: string; authorization?: string }>();
+    const xhrState = new WeakMap<
+      XMLHttpRequest,
+      { url: string; authorization?: string }
+    >();
     const originalOpen = XMLHttpRequest.prototype.open;
     const originalSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
     const originalSend = XMLHttpRequest.prototype.send;
@@ -137,21 +150,22 @@ export default defineContentScript({
       (originalOpen as (...openArgs: unknown[]) => void).apply(this, args);
     };
 
-    XMLHttpRequest.prototype.setRequestHeader = function patchedSetRequestHeader(
-      this: XMLHttpRequest,
-      name: string,
-      value: string,
-    ): void {
-      try {
-        const state = xhrState.get(this);
-        if (state && String(name).toLowerCase() === 'authorization') {
-          state.authorization = value;
+    XMLHttpRequest.prototype.setRequestHeader =
+      function patchedSetRequestHeader(
+        this: XMLHttpRequest,
+        name: string,
+        value: string,
+      ): void {
+        try {
+          const state = xhrState.get(this);
+          if (state && String(name).toLowerCase() === 'authorization') {
+            state.authorization = value;
+          }
+        } catch {
+          // Ignore.
         }
-      } catch {
-        // Ignore.
-      }
-      originalSetRequestHeader.call(this, name, value);
-    };
+        originalSetRequestHeader.call(this, name, value);
+      };
 
     XMLHttpRequest.prototype.send = function patchedSend(
       this: XMLHttpRequest,
@@ -173,7 +187,11 @@ export default defineContentScript({
         return;
       }
       const data = event.data as { source?: unknown; type?: unknown } | null;
-      if (!data || data.source !== INBOUND_SOURCE || data.type !== 'request-token') {
+      if (
+        !data ||
+        data.source !== INBOUND_SOURCE ||
+        data.type !== 'request-token'
+      ) {
         return;
       }
       if (latestToken) {

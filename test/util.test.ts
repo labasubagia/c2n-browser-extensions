@@ -29,7 +29,9 @@ describe('file naming', () => {
   });
 
   it('combines stem and extension', () => {
-    expect(fileNameForGeneration('file-abc', 'https://example.test/x.webp')).toBe('file-abc.webp');
+    expect(
+      fileNameForGeneration('file-abc', 'https://example.test/x.webp'),
+    ).toBe('file-abc.webp');
   });
 
   it('maps content types', () => {
@@ -44,16 +46,20 @@ describe('Notion database IDs', () => {
   it('accepts raw and hyphenated IDs', () => {
     const id = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
     expect(parseNotionDatabaseId(id)).toBe(id);
-    expect(parseNotionDatabaseId('a1b2c3d4-e5f6-0718-293a-4b5c6d7e8f90')).toBe(id);
+    expect(parseNotionDatabaseId('a1b2c3d4-e5f6-0718-293a-4b5c6d7e8f90')).toBe(
+      id,
+    );
   });
 
   it('accepts database URLs', () => {
-    const url = 'https://www.notion.so/workspace/Database-a1b2c3d4e5f60718293a4b5c6d7e8f90?pvs=4';
+    const url =
+      'https://www.notion.so/workspace/Database-a1b2c3d4e5f60718293a4b5c6d7e8f90?pvs=4';
     expect(parseNotionDatabaseId(url)).toBe('a1b2c3d4e5f60718293a4b5c6d7e8f90');
   });
 
   it('ignores hex characters in a URL slug', () => {
-    const url = 'https://www.notion.so/workspace/deadbeef-a1b2c3d4e5f60718293a4b5c6d7e8f90';
+    const url =
+      'https://www.notion.so/workspace/deadbeef-a1b2c3d4e5f60718293a4b5c6d7e8f90';
     expect(parseNotionDatabaseId(url)).toBe('a1b2c3d4e5f60718293a4b5c6d7e8f90');
   });
 
@@ -73,12 +79,18 @@ describe('time and JWT helpers', () => {
     const payload = { email: 'user@example.com', exp: 123 };
     const token = `header.${btoa(JSON.stringify(payload)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_')}.signature`;
     expect(decodeJwtPayload(token)).toMatchObject(payload);
-    expect(extractEmailFromJwt(decodeJwtPayload(token))).toBe('user@example.com');
+    expect(extractEmailFromJwt(decodeJwtPayload(token))).toBe(
+      'user@example.com',
+    );
   });
 
   it('reads the namespaced OpenAI auth claim', () => {
-    const payload = { 'https://api.openai.com/auth': { email: 'auth@example.com' } };
+    const payload = {
+      'https://api.openai.com/auth': { email: 'auth@example.com' },
+    };
     const token = `a.${btoa(JSON.stringify(payload))}.c`;
-    expect(extractEmailFromJwt(decodeJwtPayload(token))).toBe('auth@example.com');
+    expect(extractEmailFromJwt(decodeJwtPayload(token))).toBe(
+      'auth@example.com',
+    );
   });
 });

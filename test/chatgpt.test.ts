@@ -35,21 +35,34 @@ const conversation = {
 describe('ChatGPT conversation parsing', () => {
   it('walks parent links to the user prompt', () => {
     expect(
-      getPromptFromImageNodeInConversation(conversation, 'image', 'file-service://image-1'),
+      getPromptFromImageNodeInConversation(
+        conversation,
+        'image',
+        'file-service://image-1',
+      ),
     ).toBe('draw a red fox in a forest');
   });
 
   it('finds the node by asset pointer when the message ID is absent', () => {
-    expect(getConversationMappingKeyByAssetPointer(conversation, 'file-service://image-1')).toBe(
-      'image',
-    );
     expect(
-      getPromptFromImageNodeInConversation(conversation, 'missing', 'file-service://image-1'),
+      getConversationMappingKeyByAssetPointer(
+        conversation,
+        'file-service://image-1',
+      ),
+    ).toBe('image');
+    expect(
+      getPromptFromImageNodeInConversation(
+        conversation,
+        'missing',
+        'file-service://image-1',
+      ),
     ).toBe('draw a red fox in a forest');
   });
 
   it('returns undefined for unknown images', () => {
-    expect(getPromptFromImageNodeInConversation(conversation, 'missing', 'unknown')).toBeUndefined();
+    expect(
+      getPromptFromImageNodeInConversation(conversation, 'missing', 'unknown'),
+    ).toBeUndefined();
   });
 });
 
@@ -75,8 +88,12 @@ describe('recent image generation normalization', () => {
   });
 
   it('rejects items without required fields', () => {
-    expect(normalizeImageGenItem({ id: 'gen-1', url: 'https://example.test/a.png' })).toBeNull();
-    expect(normalizeImageGenItem({ id: 'gen-1', conversation_id: 'c', url: 'u' })).toBeNull();
+    expect(
+      normalizeImageGenItem({ id: 'gen-1', url: 'https://example.test/a.png' }),
+    ).toBeNull();
+    expect(
+      normalizeImageGenItem({ id: 'gen-1', conversation_id: 'c', url: 'u' }),
+    ).toBeNull();
   });
 });
 
@@ -92,7 +109,10 @@ describe('SSE parsing', () => {
       'data: [DONE]',
       '',
     ].join('\n');
-    expect(parseSseEvents(body)).toEqual([{ type: 'start' }, { type: 'delta', value: 1 }]);
+    expect(parseSseEvents(body)).toEqual([
+      { type: 'start' },
+      { type: 'delta', value: 1 },
+    ]);
   });
 
   it('falls back to line-delimited JSON', () => {

@@ -6,7 +6,12 @@ export class HttpError extends Error {
   readonly body: string;
   readonly retryAfterMs?: number;
 
-  constructor(status: number, url: string, body: string, retryAfterMs?: number) {
+  constructor(
+    status: number,
+    url: string,
+    body: string,
+    retryAfterMs?: number,
+  ) {
     super(`HTTP ${status} for ${url}${body ? `: ${truncate(body, 300)}` : ''}`);
     this.name = 'HttpError';
     this.status = status;
@@ -40,7 +45,10 @@ export function isRetryable(error: unknown): boolean {
   return error instanceof TypeError;
 }
 
-export function parseRetryAfter(value: string | null, now = Date.now()): number | undefined {
+export function parseRetryAfter(
+  value: string | null,
+  now = Date.now(),
+): number | undefined {
   if (!value) {
     return undefined;
   }
@@ -94,8 +102,12 @@ export async function retry<T>(
       if (isAbortError(error) || !shouldRetry(error) || attempt === attempts) {
         throw error;
       }
-      const retryAfter = error instanceof HttpError ? error.retryAfterMs : undefined;
-      const delay = Math.min(maxDelay, retryAfter ?? minDelay * 2 ** (attempt - 1));
+      const retryAfter =
+        error instanceof HttpError ? error.retryAfterMs : undefined;
+      const delay = Math.min(
+        maxDelay,
+        retryAfter ?? minDelay * 2 ** (attempt - 1),
+      );
       options.onRetry?.(error, delay, attempt);
       await sleep(delay, options.signal);
     }

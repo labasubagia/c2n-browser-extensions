@@ -1,16 +1,12 @@
-import { defineContentScript } from 'wxt/utils/define-content-script';
 import { browser } from 'wxt/browser';
+import { defineContentScript } from 'wxt/utils/define-content-script';
 
 const OUTBOUND_SOURCE = 'c2n-auth';
 const INBOUND_SOURCE = 'c2n-bridge';
 const RESEND_INTERVAL_MS = 60_000;
 
 function isTokenShaped(token: string): boolean {
-  return (
-    token.length >= 20 &&
-    token.length <= 8192 &&
-    !/\s/.test(token)
-  );
+  return token.length >= 20 && token.length <= 8192 && !/\s/.test(token);
 }
 
 export default defineContentScript({
@@ -51,23 +47,32 @@ export default defineContentScript({
     };
 
     const requestCachedToken = (): void => {
-      window.postMessage({ source: INBOUND_SOURCE, type: 'request-token' }, location.origin);
+      window.postMessage(
+        { source: INBOUND_SOURCE, type: 'request-token' },
+        location.origin,
+      );
     };
 
     window.addEventListener('message', (event) => {
       if (event.source !== window || event.origin !== location.origin) {
         return;
       }
-      const data = event.data as
-        | { source?: unknown; type?: unknown; token?: unknown; userAgent?: unknown }
-        | null;
+      const data = event.data as {
+        source?: unknown;
+        type?: unknown;
+        token?: unknown;
+        userAgent?: unknown;
+      } | null;
       if (!data || data.source !== OUTBOUND_SOURCE || data.type !== 'token') {
         return;
       }
       if (typeof data.token !== 'string') {
         return;
       }
-      forward(data.token, typeof data.userAgent === 'string' ? data.userAgent : undefined);
+      forward(
+        data.token,
+        typeof data.userAgent === 'string' ? data.userAgent : undefined,
+      );
     });
 
     requestCachedToken();

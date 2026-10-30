@@ -11,7 +11,10 @@ function sessionArea() {
 }
 
 export function normalizeBearerToken(raw: string): string {
-  return raw.trim().replace(/^Bearer\s+/i, '').trim();
+  return raw
+    .trim()
+    .replace(/^Bearer\s+/i, '')
+    .trim();
 }
 
 export function isTokenShaped(token: string): boolean {
@@ -36,7 +39,9 @@ export async function saveObservedToken(
   const payload = decodeJwtPayload(token);
   const exp = payload?.exp;
   const expiresAt =
-    typeof exp === 'number' && Number.isFinite(exp) ? exp * 1000 : capturedAt + DEFAULT_TOKEN_LIFETIME_MS;
+    typeof exp === 'number' && Number.isFinite(exp)
+      ? exp * 1000
+      : capturedAt + DEFAULT_TOKEN_LIFETIME_MS;
   const email = extractEmailFromJwt(payload);
   const existing = await getAuthSession();
 
@@ -75,7 +80,9 @@ export async function clearAuthSession(): Promise<void> {
   await sessionArea().remove(AUTH_KEY);
 }
 
-export function isSessionUsable(session: AuthSession | undefined): session is AuthSession {
+export function isSessionUsable(
+  session: AuthSession | undefined,
+): session is AuthSession {
   if (!session?.token) {
     return false;
   }

@@ -1,7 +1,11 @@
-import { requestWithRetry, HttpError } from './retry';
+import { HttpError, requestWithRetry } from './retry';
 import { deleteMeta, getMeta, setMeta } from './storage';
 import type { NotionCheck, NotionTestResult } from './types';
-import { contentTypeForFileName, errorMessage, parseNotionDatabaseId } from './util';
+import {
+  contentTypeForFileName,
+  errorMessage,
+  parseNotionDatabaseId,
+} from './util';
 
 export const NOTION_BASE_URL = 'https://api.notion.com';
 const DATA_SOURCE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -14,7 +18,9 @@ export class NotionError extends Error {
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
+  return value && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 function asString(value: unknown): string | undefined {
@@ -30,7 +36,9 @@ function pageTitle(page: unknown): string {
   const title = asArray(asRecord(properties?.Name)?.title);
   let out = '';
   for (const part of title) {
-    const text = asString(asRecord(part)?.plain_text) ?? asString(asRecord(asRecord(part)?.text)?.content);
+    const text =
+      asString(asRecord(part)?.plain_text) ??
+      asString(asRecord(asRecord(part)?.text)?.content);
     if (!text) {
       throw new NotionError('Notion page is missing Name title text');
     }
@@ -99,10 +107,17 @@ export class NotionClient {
   }
 
   async getDatabase(databaseId: string, signal: AbortSignal): Promise<unknown> {
-    return this.jsonRequest(`/v1/databases/${encodeURIComponent(databaseId)}`, { method: 'GET' }, signal);
+    return this.jsonRequest(
+      `/v1/databases/${encodeURIComponent(databaseId)}`,
+      { method: 'GET' },
+      signal,
+    );
   }
 
-  async getDataSource(dataSourceId: string, signal: AbortSignal): Promise<unknown> {
+  async getDataSource(
+    dataSourceId: string,
+    signal: AbortSignal,
+  ): Promise<unknown> {
     return this.jsonRequest(
       `/v1/data_sources/${encodeURIComponent(dataSourceId)}`,
       { method: 'GET' },
@@ -110,7 +125,10 @@ export class NotionClient {
     );
   }
 
-  private async fetchDataSources(databaseId: string, signal: AbortSignal): Promise<string[]> {
+  private async fetchDataSources(
+    databaseId: string,
+    signal: AbortSignal,
+  ): Promise<string[]> {
     const database = asRecord(await this.getDatabase(databaseId, signal));
     const ids = asArray(database?.data_sources)
       .map((item) => asString(asRecord(item)?.id))
@@ -123,9 +141,14 @@ export class NotionClient {
     return ids;
   }
 
-  async getDataSources(databaseId: string, signal: AbortSignal): Promise<string[]> {
+  async getDataSources(
+    databaseId: string,
+    signal: AbortSignal,
+  ): Promise<string[]> {
     const cacheKey = `notion:dataSources:${databaseId}`;
-    const cached = await getMeta<{ ids?: unknown; expiresAt?: unknown }>(cacheKey);
+    const cached = await getMeta<{ ids?: unknown; expiresAt?: unknown }>(
+      cacheKey,
+    );
     if (
       cached &&
       Array.isArray(cached.ids) &&
@@ -140,7 +163,10 @@ export class NotionClient {
     }
 
     const ids = await this.fetchDataSources(databaseId, signal);
-    await setMeta(cacheKey, { ids, expiresAt: Date.now() + DATA_SOURCE_CACHE_TTL_MS });
+    await setMeta(cacheKey, {
+      ids,
+      expiresAt: Date.now() + DATA_SOURCE_CACHE_TTL_MS,
+    });
     return ids;
   }
 
@@ -187,7 +213,9 @@ export class NotionClient {
       }
       const next = asString(data.next_cursor);
       if (!next || seen.has(next)) {
-        throw new NotionError('Notion pagination returned an invalid next_cursor');
+        throw new NotionError(
+          'Notion pagination returned an invalid next_cursor',
+        );
       }
       seen.add(next);
       cursor = next;
@@ -208,12 +236,17 @@ export class NotionClient {
     return false;
   }
 
-  async validateDatabase(databaseId: string, signal: AbortSignal): Promise<NotionTestResult> {
+  async validateDatabase(
+    databaseId: string,
+    signal: AbortSignal,
+  ): Promise<NotionTestResult> {
     const normalized = parseNotionDatabaseId(databaseId);
     if (!normalized) {
       return {
         ok: false,
-        checks: [{ label: 'Database ID', ok: false, detail: 'Invalid database ID.' }],
+        checks: [
+          { label: 'Database ID', ok: false, detail: 'Invalid database ID.' },
+        ],
         error: 'Notion database ID is invalid.',
       };
     }
@@ -226,7 +259,9 @@ export class NotionClient {
     } catch (error) {
       return {
         ok: false,
-        checks: [{ label: 'Database access', ok: false, detail: errorMessage(error) }],
+        checks: [
+          { label: 'Database access', ok: false, detail: errorMessage(error) },
+        ],
         error: `Cannot access Notion database: ${errorMessage(error)}`,
       };
     }
@@ -240,9 +275,17 @@ export class NotionClient {
         ok: false,
         detail: 'The database has no data sources.',
       });
-      return { ok: false, checks, error: 'Notion database has no data sources.' };
+      return {
+        ok: false,
+        checks,
+        error: 'Notion database has no data sources.',
+      };
     }
-    checks.push({ label: 'Data sources', ok: true, detail: `${sources.length} found` });
+    checks.push({
+      label: 'Data sources',
+      ok: true,
+      detail: `${sources.length} found`,
+    });
 
     for (const sourceId of sources) {
       try {
@@ -253,12 +296,18 @@ export class NotionClient {
         checks.push({
           label: `Name property (${sourceId.slice(0, 8)})`,
           ok: nameProperty?.type === 'title',
-          detail: nameProperty?.type === 'title' ? 'Title property' : 'Expected a Title property named Name.',
+          detail:
+            nameProperty?.type === 'title'
+              ? 'Title property'
+              : 'Expected a Title property named Name.',
         });
         checks.push({
           label: `Image property (${sourceId.slice(0, 8)})`,
           ok: imageProperty?.type === 'files',
-          detail: imageProperty?.type === 'files' ? 'Files property' : 'Expected a Files property named Image.',
+          detail:
+            imageProperty?.type === 'files'
+              ? 'Files property'
+              : 'Expected a Files property named Image.',
         });
       } catch (error) {
         checks.push({
@@ -302,7 +351,7 @@ export class NotionClient {
     uploadId: string,
     fileName: string,
     blob: Blob,
-    contentType: string,
+    _contentType: string,
     signal: AbortSignal,
   ): Promise<string> {
     const form = new FormData();
@@ -342,8 +391,19 @@ export class NotionClient {
     }
     const contentType = contentTypeForFileName(fileName);
     const uploadId = await this.createUpload(fileName, contentType, signal);
-    const finalUploadId = await this.sendUpload(uploadId, fileName, blob, contentType, signal);
-    const payload = buildPagePayload(normalizedDatabaseId, fileName, prompt, email);
+    const finalUploadId = await this.sendUpload(
+      uploadId,
+      fileName,
+      blob,
+      contentType,
+      signal,
+    );
+    const payload = buildPagePayload(
+      normalizedDatabaseId,
+      fileName,
+      prompt,
+      email,
+    );
     const properties = asRecord(payload.properties);
     const image = asRecord(properties?.Image);
     const files = asArray(image?.files);

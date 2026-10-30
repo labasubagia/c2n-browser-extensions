@@ -179,7 +179,10 @@ export function getPngPrompt(bytes: Uint8Array): string | undefined {
  * The chunk is inserted before IEND, existing Prompt chunks are replaced, and
  * the operation is idempotent.
  */
-export async function injectPromptMetadata(blob: Blob, prompt: string): Promise<PngResult> {
+export async function injectPromptMetadata(
+  blob: Blob,
+  prompt: string,
+): Promise<PngResult> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   if (!isPng(bytes)) {
     return { blob, outcome: 'skipped-not-png' };
@@ -187,8 +190,11 @@ export async function injectPromptMetadata(blob: Blob, prompt: string): Promise<
 
   const chunks = readChunks(bytes);
   const existing = chunks.filter((chunk) => chunkKeyword(chunk) === 'Prompt');
-  if (existing.length === 1 && chunkText(existing[0]!) === prompt) {
-    return { blob, outcome: 'already-present' };
+  if (existing.length === 1) {
+    const existingPrompt = existing[0];
+    if (existingPrompt !== undefined && chunkText(existingPrompt) === prompt) {
+      return { blob, outcome: 'already-present' };
+    }
   }
 
   const output: Uint8Array[] = [PNG_SIGNATURE];

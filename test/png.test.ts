@@ -15,7 +15,10 @@ function samplePng(): Uint8Array {
 
 function pngBlob(): Blob {
   const bytes = samplePng();
-  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const buffer = bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ) as ArrayBuffer;
   return new Blob([buffer], { type: 'image/png' });
 }
 

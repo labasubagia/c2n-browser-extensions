@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
-import { isStateUpdate, openPage, sendMessage, type RuntimeStatus } from '@/lib/messages';
-import { DEFAULT_SETTINGS, loadSettings, saveSettings, validateSettings } from '@/lib/settings';
+import { isStateUpdate, type RuntimeStatus, sendMessage } from '@/lib/messages';
+import {
+  DEFAULT_SETTINGS,
+  loadSettings,
+  saveSettings,
+  validateSettings,
+} from '@/lib/settings';
 import type { NotionTestResult, Settings } from '@/lib/types';
 import { errorMessage } from '@/lib/util';
 
@@ -41,7 +46,9 @@ export default function App() {
     const listener = (message: unknown) => {
       if (isStateUpdate(message)) {
         setStatus((current) =>
-          current ? { ...current, sync: message.sync, library: message.library } : current,
+          current
+            ? { ...current, sync: message.sync, library: message.library }
+            : current,
         );
         if (!message.sync.running) {
           void refresh();
@@ -59,12 +66,24 @@ export default function App() {
     };
   }, [refresh]);
 
-  const updateNotion = <K extends keyof Settings['notion']>(key: K, value: Settings['notion'][K]) => {
-    setForm((current) => ({ ...current, notion: { ...current.notion, [key]: value } }));
+  const updateNotion = <K extends keyof Settings['notion']>(
+    key: K,
+    value: Settings['notion'][K],
+  ) => {
+    setForm((current) => ({
+      ...current,
+      notion: { ...current.notion, [key]: value },
+    }));
   };
 
-  const updateSync = <K extends keyof Settings['sync']>(key: K, value: Settings['sync'][K]) => {
-    setForm((current) => ({ ...current, sync: { ...current.sync, [key]: value } }));
+  const updateSync = <K extends keyof Settings['sync']>(
+    key: K,
+    value: Settings['sync'][K],
+  ) => {
+    setForm((current) => ({
+      ...current,
+      sync: { ...current.sync, [key]: value },
+    }));
   };
 
   const save = async (): Promise<boolean> => {
@@ -118,7 +137,9 @@ export default function App() {
     try {
       await sendMessage({ type: 'FORGET_AUTH' });
       await refresh();
-      setNotice('Captured ChatGPT token removed. Reload chatgpt.com to capture a new one.');
+      setNotice(
+        'Captured ChatGPT token removed. Reload chatgpt.com to capture a new one.',
+      );
     } catch (error) {
       setErrors([errorMessage(error)]);
     } finally {
@@ -141,20 +162,23 @@ export default function App() {
               <div className="brand__subtitle">Browser extension settings</div>
             </div>
           </div>
-          <span className="badge badge--neutral">v{status?.version ?? '…'}</span>
+          <span className="badge badge--neutral">
+            v{status?.version ?? '…'}
+          </span>
         </div>
         <p className="page-lead">
-          c2n syncs ChatGPT image generations to a Notion database only when you press{' '}
-          <strong>Sync now</strong>. Your ChatGPT session token is observed from chatgpt.com traffic
-          and kept in this browser session; nothing is sent anywhere except Notion.
+          c2n syncs ChatGPT image generations to a Notion database only when you
+          press <strong>Sync now</strong>. Your ChatGPT session token is
+          observed from chatgpt.com traffic and kept in this browser session;
+          nothing is sent anywhere except Notion.
         </p>
       </header>
 
       {errors.length > 0 && (
         <div className="banner banner--danger">
           <ul className="plain-list stack stack--tight">
-            {errors.map((entry, index) => (
-              <li key={index}>{entry}</li>
+            {errors.map((entry, _index) => (
+              <li key={entry}>{entry}</li>
             ))}
           </ul>
         </div>
@@ -196,8 +220,8 @@ export default function App() {
             </button>
           </div>
           <span className="hint">
-            Create an internal integration at notion.so/my-integrations, then share your database
-            with it.
+            Create an internal integration at notion.so/my-integrations, then
+            share your database with it.
           </span>
         </div>
 
@@ -213,7 +237,9 @@ export default function App() {
               spellCheck={false}
               placeholder="https://www.notion.so/…"
               value={form.notion.databaseId}
-              onChange={(event) => updateNotion('databaseId', event.target.value)}
+              onChange={(event) =>
+                updateNotion('databaseId', event.target.value)
+              }
             />
           </div>
           <div className="field">
@@ -232,13 +258,19 @@ export default function App() {
         </div>
 
         <div className="banner">
-          The database must have a <strong>Name</strong> property of type <strong>Title</strong> and
-          an <strong>Image</strong> property of type <strong>Files</strong>. Use{' '}
-          <strong>Test connection</strong> to verify both before syncing.
+          The database must have a <strong>Name</strong> property of type{' '}
+          <strong>Title</strong> and an <strong>Image</strong> property of type{' '}
+          <strong>Files</strong>. Use <strong>Test connection</strong> to verify
+          both before syncing.
         </div>
 
         <div className="row">
-          <button className="btn" disabled={Boolean(busy)} onClick={() => void onTest()} type="button">
+          <button
+            className="btn"
+            disabled={Boolean(busy)}
+            onClick={() => void onTest()}
+            type="button"
+          >
             {busy === 'test' ? 'Testing…' : 'Test connection'}
           </button>
           <button
@@ -253,22 +285,29 @@ export default function App() {
 
         {tests && (
           <div className="checks">
-            {tests.checks.map((check, index) => (
+            {tests.checks.map((check, _index) => (
               <div
                 className={`check-row ${check.ok ? 'check-row--ok' : 'check-row--bad'}`}
-                key={`${check.label}-${index}`}
+                key={check.label}
               >
                 <span className="check-row__icon">{check.ok ? '✓' : '✕'}</span>
                 <span>
                   <strong>{check.label}</strong>
-                  {check.detail ? <span className="muted"> — {check.detail}</span> : null}
+                  {check.detail ? (
+                    <span className="muted"> — {check.detail}</span>
+                  ) : null}
                 </span>
               </div>
             ))}
-            <div className={tests.ok ? 'banner banner--info' : 'banner banner--danger'} style={{ marginTop: 6 }}>
+            <div
+              className={
+                tests.ok ? 'banner banner--info' : 'banner banner--danger'
+              }
+              style={{ marginTop: 6 }}
+            >
               {tests.ok
                 ? 'Database looks good. c2n is ready to sync.'
-                : tests.error ?? 'The database did not pass validation.'}
+                : (tests.error ?? 'The database did not pass validation.')}
             </div>
           </div>
         )}
@@ -291,9 +330,13 @@ export default function App() {
               min={1}
               max={500}
               value={form.sync.limit}
-              onChange={(event) => updateSync('limit', Number(event.target.value))}
+              onChange={(event) =>
+                updateSync('limit', Number(event.target.value))
+              }
             />
-            <span className="hint">Between 1 and 500. Applies to each manual sync or resume.</span>
+            <span className="hint">
+              Between 1 and 500. Applies to each manual sync or resume.
+            </span>
           </div>
         </div>
 
@@ -301,13 +344,15 @@ export default function App() {
           <input
             type="checkbox"
             checked={form.sync.checkNotionDuplicates}
-            onChange={(event) => updateSync('checkNotionDuplicates', event.target.checked)}
+            onChange={(event) =>
+              updateSync('checkNotionDuplicates', event.target.checked)
+            }
           />
           <span>
             <span className="check__title">Check Notion for duplicates</span>
             <span className="check__desc">
-              Query the database for the generated filename before downloading, and mark matches as
-              already uploaded.
+              Query the database for the generated filename before downloading,
+              and mark matches as already uploaded.
             </span>
           </span>
         </label>
@@ -316,13 +361,15 @@ export default function App() {
           <input
             type="checkbox"
             checked={form.sync.embedPromptMetadata}
-            onChange={(event) => updateSync('embedPromptMetadata', event.target.checked)}
+            onChange={(event) =>
+              updateSync('embedPromptMetadata', event.target.checked)
+            }
           />
           <span>
             <span className="check__title">Embed prompt in PNG metadata</span>
             <span className="check__desc">
-              Writes a <span className="mono">Prompt</span> text chunk into PNG files before
-              uploading. Non-PNG images are uploaded unchanged.
+              Writes a <span className="mono">Prompt</span> text chunk into PNG
+              files before uploading. Non-PNG images are uploaded unchanged.
             </span>
           </span>
         </label>
@@ -332,12 +379,17 @@ export default function App() {
             type="checkbox"
             checked={form.notifyOnFinish}
             onChange={(event) =>
-              setForm((current) => ({ ...current, notifyOnFinish: event.target.checked }))
+              setForm((current) => ({
+                ...current,
+                notifyOnFinish: event.target.checked,
+              }))
             }
           />
           <span>
             <span className="check__title">Notify when a sync finishes</span>
-            <span className="check__desc">Shows a browser notification on finish or failure.</span>
+            <span className="check__desc">
+              Shows a browser notification on finish or failure.
+            </span>
           </span>
         </label>
 
@@ -358,7 +410,9 @@ export default function App() {
           <span className="card__title">ChatGPT session</span>
           <span className="spacer" />
           {status?.auth.present ? (
-            <span className="badge badge--ok">{status.auth.email ?? 'Captured'}</span>
+            <span className="badge badge--ok">
+              {status.auth.email ?? 'Captured'}
+            </span>
           ) : status?.auth.capturedAt ? (
             <span className="badge badge--warn">Expired</span>
           ) : (
@@ -370,10 +424,13 @@ export default function App() {
             <span>
               Captured {formatDateTime(status.auth.capturedAt)} · last observed{' '}
               {formatDateTime(status.auth.lastSeenAt)}
-              {status.auth.expiresAt ? ` · expires ${formatDateTime(status.auth.expiresAt)}` : ''}
+              {status.auth.expiresAt
+                ? ` · expires ${formatDateTime(status.auth.expiresAt)}`
+                : ''}
             </span>
             <span className="muted">
-              No account login is stored here. Reload chatgpt.com whenever the token expires.
+              No account login is stored here. Reload chatgpt.com whenever the
+              token expires.
             </span>
           </div>
         ) : (
@@ -417,15 +474,17 @@ export default function App() {
         <div className="divider" />
         <div className="link-row">
           <a
-            href="#"
-            onClick={(event) => {
-              event.preventDefault();
-              openPage('library.html');
-            }}
+            href={browser.runtime.getURL('/library.html')}
+            target="_blank"
+            rel="noreferrer"
           >
             ChatGPT library cleanup
           </a>
-          <a href="https://github.com/labasubagia/c2n" target="_blank" rel="noreferrer">
+          <a
+            href="https://github.com/labasubagia/c2n"
+            target="_blank"
+            rel="noreferrer"
+          >
             c2n on GitHub
           </a>
         </div>

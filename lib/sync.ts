@@ -10,7 +10,7 @@ import {
 import { NotionClient } from './notion';
 import { injectPromptMetadata } from './png';
 import { HttpError } from './retry';
-import { loadSettings, isNotionConfigured } from './settings';
+import { isNotionConfigured, loadSettings } from './settings';
 import {
   getGenerationsByIds,
   getMeta,
@@ -28,7 +28,12 @@ import type {
   SyncRunRecord,
   SyncState,
 } from './types';
-import { errorMessage, fileNameForGeneration, isAbortError, timestampToIso } from './util';
+import {
+  errorMessage,
+  fileNameForGeneration,
+  isAbortError,
+  timestampToIso,
+} from './util';
 
 const STATE_KEY = 'syncState';
 const MAX_ERRORS = 50;
@@ -55,7 +60,9 @@ let active: { id: string; controller: AbortController } | null = null;
 let starting = false;
 let listener: ((state: SyncState) => void) | null = null;
 
-export function setSyncStateListener(next: ((state: SyncState) => void) | null): void {
+export function setSyncStateListener(
+  next: ((state: SyncState) => void) | null,
+): void {
   listener = next;
 }
 
@@ -102,7 +109,8 @@ export async function restoreSyncState(): Promise<SyncState> {
       ...state,
       running: false,
       phase: 'interrupted',
-      message: 'The previous sync was interrupted. Resume it to continue where it stopped.',
+      message:
+        'The previous sync was interrupted. Resume it to continue where it stopped.',
       finishedAt: Date.now(),
     };
     await setMeta(STATE_KEY, state);
@@ -115,7 +123,9 @@ export interface StartSyncResult {
   error?: string;
 }
 
-export async function startSync(options: { resume?: boolean } = {}): Promise<StartSyncResult> {
+export async function startSync(
+  options: { resume?: boolean } = {},
+): Promise<StartSyncResult> {
   if (active || starting) {
     return { ok: false, error: 'A sync is already running.' };
   }
@@ -125,7 +135,8 @@ export async function startSync(options: { resume?: boolean } = {}): Promise<Sta
     if (!isNotionConfigured(settings)) {
       return {
         ok: false,
-        error: 'Configure your Notion integration token and database ID in Settings first.',
+        error:
+          'Configure your Notion integration token and database ID in Settings first.',
       };
     }
 
@@ -148,20 +159,26 @@ export async function startSync(options: { resume?: boolean } = {}): Promise<Sta
       phase: 'discovering',
       runId,
       startedAt,
-      message: options.resume ? 'Resuming…' : 'Looking for recent image generations…',
+      message: options.resume
+        ? 'Resuming…'
+        : 'Looking for recent image generations…',
     };
     state = baseState;
     listener?.(state);
     await setMeta(STATE_KEY, state);
 
-    void run(runId, session, settings, controller.signal, Boolean(options.resume)).catch(
-      async (error: unknown) => {
-        if (active?.id !== runId) {
-          return;
-        }
-        await finishWithError(error);
-      },
-    );
+    void run(
+      runId,
+      session,
+      settings,
+      controller.signal,
+      Boolean(options.resume),
+    ).catch(async (error: unknown) => {
+      if (active?.id !== runId) {
+        return;
+      }
+      await finishWithError(error);
+    });
 
     return { ok: true };
   } finally {
@@ -185,12 +202,18 @@ async function run(
   signal: AbortSignal,
   resume: boolean,
 ): Promise<void> {
-  const notion = new NotionClient(settings.notion.apiKey, settings.notion.version);
+  const notion = new NotionClient(
+    settings.notion.apiKey,
+    settings.notion.version,
+  );
   let runErrors: RunError[] = [];
   let email = session.email;
 
   try {
-    const validation = await notion.validateDatabase(settings.notion.databaseId, signal);
+    const validation = await notion.validateDatabase(
+      settings.notion.databaseId,
+      signal,
+    );
     if (!validation.ok) {
       throw new Error(validation.error ?? 'Notion database validation failed.');
     }
@@ -221,7 +244,11 @@ async function run(
     const refreshed: GenerationRecord[] = [];
     for (const item of items) {
       const existing = knownById.get(item.id);
-      if (existing && existing.status !== 'uploaded' && existing.url !== item.url) {
+      if (
+        existing &&
+        existing.status !== 'uploaded' &&
+        existing.url !== item.url
+      ) {
         const next = { ...existing, url: item.url };
         knownById.set(item.id, next);
         refreshed.push(next);
@@ -238,15 +265,25 @@ async function run(
 
     let discovered = 0;
     for (const [conversationId, conversationItems] of byConversation) {
-      const missing = conversationItems.filter((item) => !knownById.has(item.id));
+      const missing = conversationItems.filter(
+        (item) => !knownById.has(item.id),
+      );
       if (!missing.length) {
         continue;
       }
-      const details = await getConversation(session.token, conversationId, signal);
+      const details = await getConversation(
+        session.token,
+        conversationId,
+        signal,
+      );
       ensureActive(runId);
       const records: GenerationRecord[] = missing.map((item) => {
         const prompt =
-          getPromptFromImageNodeInConversation(details, item.messageId, item.assetPointer) ?? '';
+          getPromptFromImageNodeInConversation(
+            details,
+            item.messageId,
+            item.assetPointer,
+          ) ?? '';
         return {
           id: item.id,
           conversationId,
@@ -266,21 +303,25 @@ async function run(
 
     const recentIds = new Set(items.map((item) => item.id));
     const pending = await getPendingGenerations(500);
-    const recentUploaded =
-      settings.sync.checkNotionDuplicates
-        ? [...knownById.values()].filter(
-            (record) => record.status === 'uploaded' && recentIds.has(record.id),
-          )
-        : [];
+    const recentUploaded = settings.sync.checkNotionDuplicates
+      ? [...knownById.values()].filter(
+          (record) => record.status === 'uploaded' && recentIds.has(record.id),
+        )
+      : [];
     const candidates = resume
       ? [...pending]
       : [
-          ...pending.filter((record) => recentIds.has(record.id) || record.status === 'failed'),
+          ...pending.filter(
+            (record) => recentIds.has(record.id) || record.status === 'failed',
+          ),
           ...recentUploaded,
         ].sort((left, right) => {
           const leftRecent = recentIds.has(left.id) ? 0 : 1;
           const rightRecent = recentIds.has(right.id) ? 0 : 1;
-          return leftRecent - rightRecent || left.createdAt.localeCompare(right.createdAt);
+          return (
+            leftRecent - rightRecent ||
+            left.createdAt.localeCompare(right.createdAt)
+          );
         });
     const selected = candidates.slice(0, settings.sync.limit);
 
@@ -299,7 +340,13 @@ async function run(
     });
 
     if (!selected.length) {
-      await finish(runId, 'done', email, runErrors, 'Nothing to sync. Recent images are already up to date.');
+      await finish(
+        runId,
+        'done',
+        email,
+        runErrors,
+        'Nothing to sync. Recent images are already up to date.',
+      );
       return;
     }
 
@@ -476,7 +523,10 @@ interface ProcessResult {
  * remaining generation as failed.
  */
 function fatalAuthMessage(error: unknown): string | null {
-  if (!(error instanceof HttpError) || (error.status !== 401 && error.status !== 403)) {
+  if (
+    !(error instanceof HttpError) ||
+    (error.status !== 401 && error.status !== 403)
+  ) {
     return null;
   }
   return error.url.includes('notion.com')
@@ -492,7 +542,8 @@ async function processOne(
   signal: AbortSignal,
   email: string | undefined,
 ): Promise<ProcessResult> {
-  const fileName = record.fileName || fileNameForGeneration(record.id, record.url);
+  const fileName =
+    record.fileName || fileNameForGeneration(record.id, record.url);
 
   const alreadyUploaded = record.status === 'uploaded';
   if (alreadyUploaded && !settings.sync.checkNotionDuplicates) {
@@ -500,7 +551,11 @@ async function processOne(
   }
   if (settings.sync.checkNotionDuplicates) {
     try {
-      const exists = await notion.isPageExists(settings.notion.databaseId, fileName, signal);
+      const exists = await notion.isPageExists(
+        settings.notion.databaseId,
+        fileName,
+        signal,
+      );
       if (exists) {
         await markGenerationUploaded(record.id);
         return { outcome: 'skipped', fileName };
@@ -533,7 +588,12 @@ async function processOne(
     if (fatal) {
       throw new Error(fatal);
     }
-    return { outcome: 'failed', fileName, stage: 'download', error: errorMessage(error) };
+    return {
+      outcome: 'failed',
+      fileName,
+      stage: 'download',
+      error: errorMessage(error),
+    };
   }
 
   if (settings.sync.embedPromptMetadata && record.prompt) {
@@ -543,7 +603,12 @@ async function processOne(
       if (isAbortError(error) || signal.aborted) {
         throw error;
       }
-      return { outcome: 'failed', fileName, stage: 'prompt', error: errorMessage(error) };
+      return {
+        outcome: 'failed',
+        fileName,
+        stage: 'prompt',
+        error: errorMessage(error),
+      };
     }
   }
 
@@ -566,6 +631,11 @@ async function processOne(
     if (fatal) {
       throw new Error(fatal);
     }
-    return { outcome: 'failed', fileName, stage: 'upload', error: errorMessage(error) };
+    return {
+      outcome: 'failed',
+      fileName,
+      stage: 'upload',
+      error: errorMessage(error),
+    };
   }
 }

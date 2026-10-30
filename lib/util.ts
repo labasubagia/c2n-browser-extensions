@@ -61,7 +61,9 @@ export function timestampToIso(value: number): string {
   }
   const milliseconds = value > 10_000_000_000 ? value : value * 1000;
   const date = new Date(milliseconds);
-  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+  return Number.isNaN(date.getTime())
+    ? new Date().toISOString()
+    : date.toISOString();
 }
 
 /**
@@ -85,9 +87,9 @@ export function parseNotionDatabaseId(input: string): string | null {
 
   const cleaned = trimmed.split(/[?#]/)[0] ?? trimmed;
   const tail = cleaned.replace(/\/+$/, '').split('/').pop() ?? '';
-  const compact = tail.match(/([0-9a-f]{32})$/i);
-  if (compact) {
-    return compact[1]!.toLowerCase();
+  const compactId = tail.match(/([0-9a-f]{32})$/i)?.[1];
+  if (compactId) {
+    return compactId.toLowerCase();
   }
   const hyphenated = tail.match(
     /([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/i,
@@ -115,7 +117,9 @@ export function contentTypeForFileName(fileName: string): string {
   return 'image/png';
 }
 
-export function decodeJwtPayload(token: string): Record<string, unknown> | null {
+export function decodeJwtPayload(
+  token: string,
+): Record<string, unknown> | null {
   const parts = token.split('.');
   if (parts.length !== 3) {
     return null;
@@ -126,16 +130,23 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
   }
   try {
     const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      '=',
+    );
     const json = atob(padded);
     const parsed: unknown = JSON.parse(json);
-    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
+    return parsed && typeof parsed === 'object'
+      ? (parsed as Record<string, unknown>)
+      : null;
   } catch {
     return null;
   }
 }
 
-export function extractEmailFromJwt(payload: Record<string, unknown> | null): string | undefined {
+export function extractEmailFromJwt(
+  payload: Record<string, unknown> | null,
+): string | undefined {
   if (!payload) {
     return undefined;
   }
