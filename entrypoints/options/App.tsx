@@ -273,14 +273,6 @@ export default function App() {
           >
             {busy === 'test' ? 'Testing…' : 'Test connection'}
           </button>
-          <button
-            className="btn btn--primary"
-            disabled={Boolean(busy)}
-            onClick={() => void onSave()}
-            type="button"
-          >
-            {busy === 'save' ? 'Saving…' : 'Save settings'}
-          </button>
         </div>
 
         {tests && (
@@ -348,7 +340,7 @@ export default function App() {
               updateSync('checkNotionDuplicates', event.target.checked)
             }
           />
-          <span>
+          <span className="check__body">
             <span className="check__title">Check Notion for duplicates</span>
             <span className="check__desc">
               Query the database for the generated filename before downloading,
@@ -365,7 +357,7 @@ export default function App() {
               updateSync('embedPromptMetadata', event.target.checked)
             }
           />
-          <span>
+          <span className="check__body">
             <span className="check__title">Embed prompt in PNG metadata</span>
             <span className="check__desc">
               Writes a <span className="mono">Prompt</span> text chunk into PNG
@@ -385,7 +377,7 @@ export default function App() {
               }))
             }
           />
-          <span>
+          <span className="check__body">
             <span className="check__title">Notify when a sync finishes</span>
             <span className="check__desc">
               Shows a browser notification on finish or failure.
