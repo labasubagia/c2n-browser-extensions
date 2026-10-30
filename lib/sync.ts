@@ -1,5 +1,6 @@
 import { getUsableAuthSession, setAuthEmail } from './auth';
 import {
+  deleteConversation,
   downloadImage,
   getConversation,
   getMe,
@@ -44,6 +45,7 @@ const EMPTY_STATE: SyncState = {
   uploaded: 0,
   skipped: 0,
   failed: 0,
+  deleted: 0,
   message: '',
   errors: [],
 };
@@ -264,15 +266,22 @@ async function run(
 
     const recentIds = new Set(items.map((item) => item.id));
     const pending = await getPendingGenerations(500);
+    const recentUploaded =
+      settings.sync.checkNotionDuplicates
+        ? [...knownById.values()].filter(
+            (record) => record.status === 'uploaded' && recentIds.has(record.id),
+          )
+        : [];
     const candidates = resume
       ? [...pending]
-      : pending
-          .filter((record) => recentIds.has(record.id) || record.status === 'failed')
-          .sort((left, right) => {
-            const leftRecent = recentIds.has(left.id) ? 0 : 1;
-            const rightRecent = recentIds.has(right.id) ? 0 : 1;
-            return leftRecent - rightRecent || left.createdAt.localeCompare(right.createdAt);
-          });
+      : [
+          ...pending.filter((record) => recentIds.has(record.id) || record.status === 'failed'),
+          ...recentUploaded,
+        ].sort((left, right) => {
+          const leftRecent = recentIds.has(left.id) ? 0 : 1;
+          const rightRecent = recentIds.has(right.id) ? 0 : 1;
+          return leftRecent - rightRecent || left.createdAt.localeCompare(right.createdAt);
+        });
     const selected = candidates.slice(0, settings.sync.limit);
 
     await update({
@@ -294,6 +303,7 @@ async function run(
       return;
     }
 
+    const conversationResults = new Map<string, { total: number; ok: number }>();
     for (const record of selected) {
       ensureActive(runId);
       const result = await processOne(
@@ -305,6 +315,16 @@ async function run(
         email,
       );
       ensureActive(runId);
+
+      const bucket = conversationResults.get(record.conversationId) ?? {
+        total: 0,
+        ok: 0,
+      };
+      bucket.total += 1;
+      if (result.outcome !== 'failed') {
+        bucket.ok += 1;
+      }
+      conversationResults.set(record.conversationId, bucket);
 
       if (result.outcome === 'uploaded') {
         await update({
@@ -337,12 +357,42 @@ async function run(
       }
     }
 
+    let deletedConversations = 0;
+    if (settings.sync.deleteConversationsAfterSync) {
+      for (const [conversationId, res] of conversationResults) {
+        ensureActive(runId);
+        if (res.ok !== res.total) {
+          continue;
+        }
+        try {
+          await deleteConversation(session.token, conversationId, signal);
+          deletedConversations += 1;
+          await update({ deleted: state.deleted + 1 });
+        } catch (error) {
+          if (signal.aborted || isAbortError(error)) {
+            throw error;
+          }
+          const fatal = fatalAuthMessage(error);
+          if (fatal) {
+            throw new Error(fatal);
+          }
+          runErrors = appendError(runErrors, {
+            id: conversationId,
+            fileName: '—',
+            stage: 'run',
+            message: `Failed to delete conversation: ${errorMessage(error)}`,
+            at: new Date().toISOString(),
+          });
+          await update({ errors: runErrors });
+        }
+      }
+    }
     await finish(
       runId,
       'done',
       email,
       runErrors,
-      `Sync finished: ${state.uploaded} uploaded, ${state.skipped} skipped, ${state.failed} failed.`,
+      `Sync finished: ${state.uploaded} uploaded, ${state.skipped} skipped, ${state.failed} failed${deletedConversations ? `, ${deletedConversations} conversation${deletedConversations === 1 ? '' : 's'} deleted` : ''}.`,
     );
   } catch (error) {
     if (active?.id !== runId) {
@@ -408,6 +458,7 @@ async function finish(
       uploaded: state.uploaded,
       skipped: state.skipped,
       failed: state.failed,
+      deleted: state.deleted,
       errors,
       email,
     };
@@ -445,10 +496,10 @@ async function processOne(
 ): Promise<ProcessResult> {
   const fileName = record.fileName || fileNameForGeneration(record.id, record.url);
 
-  if (record.status === 'uploaded') {
+  const alreadyUploaded = record.status === 'uploaded';
+  if (alreadyUploaded && !settings.sync.checkNotionDuplicates) {
     return { outcome: 'skipped', fileName };
   }
-
   if (settings.sync.checkNotionDuplicates) {
     try {
       const exists = await notion.isPageExists(settings.notion.databaseId, fileName, signal);

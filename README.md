@@ -63,6 +63,7 @@ For each recent generation c2n:
 4. Optionally embeds the prompt in PNG `tEXt`/`iTXt` metadata.
 5. Uploads the file to Notion and creates the database page.
 6. Marks the generation uploaded locally.
+7. Optionally deletes the ChatGPT conversation once every image in it has synced (toggle off by default).
 
 State lives in IndexedDB (`c2n` database) in the extension origin. No image blobs are retained.
 
@@ -73,6 +74,7 @@ State lives in IndexedDB (`c2n` database) in the extension origin. No image blob
 | Recent generations to inspect | 100 | ChatGPT history window per run, 1–500. |
 | Check Notion for duplicates | on | Query `Name` before downloading. |
 | Embed prompt in PNG metadata | on | Adds a `Prompt` chunk to PNG files. |
+| Delete conversations after sync | off | After all images in a conversation upload, delete it from ChatGPT. |
 | Notify when a sync finishes | on | Browser notification on finish/failure. |
 
 ## Library cleanup
@@ -144,6 +146,7 @@ Key modules:
 ## Limitations
 
 - Single ChatGPT account, Chrome/Edge (Manifest V3) first.
-- Conversation hiding/deletion is intentionally not part of sync.
+- Conversation deletion is optional, off by default, and only runs for conversations where every
+  image synced successfully.
 - Sync requires the Notion database to use the hardcoded `Name`/`Image` properties.
 - ChatGPT's internal backend API can change without notice; c2n has no public API contract to rely on.

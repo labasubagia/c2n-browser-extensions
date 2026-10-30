@@ -8,6 +8,7 @@ export interface SyncSettings {
   limit: number;
   checkNotionDuplicates: boolean;
   embedPromptMetadata: boolean;
+  deleteConversationsAfterSync: boolean;
 }
 
 export interface Settings {
@@ -89,6 +90,7 @@ export interface SyncState {
   current: number;
   uploaded: number;
   skipped: number;
+  deleted: number;
   failed: number;
   message: string;
   errors: RunError[];
@@ -102,6 +104,7 @@ export interface SyncRunRecord {
   discovered: number;
   uploaded: number;
   skipped: number;
+  deleted: number;
   failed: number;
   errors: RunError[];
   email?: string;

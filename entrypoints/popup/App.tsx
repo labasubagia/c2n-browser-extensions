@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser';
 import { isStateUpdate, openOptionsPage, openPage, sendMessage, type RuntimeStatus } from '@/lib/messages';
 import type { SyncState } from '@/lib/types';
 import { errorMessage } from '@/lib/util';
+import { loadSettings, saveSettings } from '@/lib/settings';
 
 function formatDateTime(value: number | undefined): string {
   if (!value) {
@@ -57,6 +58,16 @@ export default function App() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [deleteConvs, setDeleteConvs] = useState<boolean>(false);
+  const [convsLoaded, setConvsLoaded] = useState(false);
+  const toggleDeleteConvs = async (checked: boolean) => {
+    setDeleteConvs(checked);
+    const current = await loadSettings();
+    await saveSettings({
+      ...current,
+      sync: { ...current.sync, deleteConversationsAfterSync: checked },
+    });
+  };
 
   const refresh = useCallback(async () => {
     try {
@@ -86,6 +97,12 @@ export default function App() {
       browser.runtime.onMessage.removeListener(listener);
     };
   }, [refresh]);
+  useEffect(() => {
+    if (status && !convsLoaded) {
+      setDeleteConvs(status.settings.sync.deleteConversationsAfterSync);
+      setConvsLoaded(true);
+    }
+  }, [status, convsLoaded]);
 
   const start = async (resume: boolean) => {
     setBusy(resume ? 'resume' : 'sync');
@@ -256,6 +273,10 @@ export default function App() {
             <div className="stat__value">{status.sync.failed}</div>
             <div className="stat__label">Failed</div>
           </div>
+          <div className="stat">
+            <div className="stat__value">{status.sync.deleted}</div>
+            <div className="stat__label">Conversations deleted</div>
+          </div>
         </div>
 
         {errors.length > 0 && (
@@ -270,6 +291,22 @@ export default function App() {
           </ul>
         )}
 
+        {!running && (
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={deleteConvs}
+              disabled={Boolean(busy) || libraryRunning}
+              onChange={(event) => void toggleDeleteConvs(event.target.checked)}
+            />
+            <span className="check__body">
+              <span className="check__title">Delete conversations after sync</span>
+              <span className="check__desc">
+                After all images in a conversation reach Notion, delete it from ChatGPT.
+              </span>
+            </span>
+          </label>
+        )}
         <div className="row">
           {running ? (
             <button
@@ -331,7 +368,8 @@ export default function App() {
       {status.lastRun && !running && (
         <div className="small muted">
           Last run {formatDateTime(status.lastRun.finishedAt)}: {status.lastRun.uploaded} uploaded,{' '}
-          {status.lastRun.skipped} skipped, {status.lastRun.failed} failed.
+          {status.lastRun.skipped} skipped, {status.lastRun.failed} failed
+          {status.lastRun.deleted ? `, ${status.lastRun.deleted} conversation${status.lastRun.deleted === 1 ? '' : 's'} deleted` : ''}.
         </div>
       )}
 

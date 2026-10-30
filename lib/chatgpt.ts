@@ -221,6 +221,23 @@ export async function deleteLibraryFile(
   }
 }
 
+export async function deleteConversation(
+  token: string,
+  conversationId: string,
+  signal: AbortSignal,
+): Promise<void> {
+  await requestWithRetry(
+    `${CHATGPT_BASE_URL}/conversation/${encodeURIComponent(conversationId)}`,
+    {
+      method: 'PATCH',
+      headers: chatGptHeaders(token),
+      credentials: 'include',
+      body: JSON.stringify({ is_visible: false }),
+    },
+    { signal },
+  );
+}
+
 export function getConversationMappingKeyByAssetPointer(
   data: unknown,
   assetPointer: string,
