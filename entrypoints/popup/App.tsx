@@ -281,7 +281,7 @@ export default function App() {
             'Sync runs only when you ask. Nothing is uploaded automatically.'}
         </p>
 
-        <div className="stats">
+        <div className="stats stats--two">
           <div className="stat">
             <div className="stat__value">{status.sync.uploaded}</div>
             <div className="stat__label">Uploaded</div>
@@ -325,8 +325,9 @@ export default function App() {
                 Delete conversations after sync
               </span>
               <span className="check__desc">
-                After all images in a conversation reach Notion, delete it from
-                ChatGPT.
+                Once every image in a conversation has been uploaded or was
+                already in Notion, deletes the whole conversation from ChatGPT.
+                Any failed upload keeps it.
               </span>
             </span>
           </label>

@@ -353,6 +353,9 @@ a:hover {
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
+.stats--two {
+  grid-template-columns: repeat(2, 1fr);
+}
 
 .stat {
   background: var(--surface-muted);
@@ -471,8 +474,8 @@ a:hover {
 }
 .check__body {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0 6px;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
