@@ -303,67 +303,65 @@ async function run(
       return;
     }
 
-    const conversationResults = new Map<string, { total: number; ok: number }>();
+    const groupedByConversation = new Map<string, typeof selected>();
     for (const record of selected) {
-      ensureActive(runId);
-      const result = await processOne(
-        record,
-        session.token,
-        notion,
-        settings,
-        signal,
-        email,
-      );
-      ensureActive(runId);
-
-      const bucket = conversationResults.get(record.conversationId) ?? {
-        total: 0,
-        ok: 0,
-      };
-      bucket.total += 1;
-      if (result.outcome !== 'failed') {
-        bucket.ok += 1;
-      }
-      conversationResults.set(record.conversationId, bucket);
-
-      if (result.outcome === 'uploaded') {
-        await update({
-          current: state.current + 1,
-          uploaded: state.uploaded + 1,
-          message: `Uploaded ${result.fileName}`,
-        });
-      } else if (result.outcome === 'skipped') {
-        await update({
-          current: state.current + 1,
-          skipped: state.skipped + 1,
-          message: `Skipped ${result.fileName} (already in Notion)`,
-        });
-      } else {
-        const error: RunError = {
-          id: record.id,
-          fileName: result.fileName,
-          stage: result.stage ?? 'upload',
-          message: result.error ?? 'Unknown error',
-          at: new Date().toISOString(),
-        };
-        runErrors = appendError(runErrors, error);
-        await markGenerationFailed(record.id, error.message);
-        await update({
-          current: state.current + 1,
-          failed: state.failed + 1,
-          errors: runErrors,
-          message: `Failed ${result.fileName}: ${error.message}`,
-        });
-      }
+      const list = groupedByConversation.get(record.conversationId) ?? [];
+      list.push(record);
+      groupedByConversation.set(record.conversationId, list);
     }
 
     let deletedConversations = 0;
-    if (settings.sync.deleteConversationsAfterSync) {
-      for (const [conversationId, res] of conversationResults) {
+    for (const [conversationId, records] of groupedByConversation) {
+      let ok = 0;
+      for (const record of records) {
         ensureActive(runId);
-        if (res.ok !== res.total) {
-          continue;
+        const result = await processOne(
+          record,
+          session.token,
+          notion,
+          settings,
+          signal,
+          email,
+        );
+        ensureActive(runId);
+
+        if (result.outcome !== 'failed') {
+          ok += 1;
         }
+
+        if (result.outcome === 'uploaded') {
+          await update({
+            current: state.current + 1,
+            uploaded: state.uploaded + 1,
+            message: `Uploaded ${result.fileName}`,
+          });
+        } else if (result.outcome === 'skipped') {
+          await update({
+            current: state.current + 1,
+            skipped: state.skipped + 1,
+            message: `Skipped ${result.fileName} (already in Notion)`,
+          });
+        } else {
+          const error: RunError = {
+            id: record.id,
+            fileName: result.fileName,
+            stage: result.stage ?? 'upload',
+            message: result.error ?? 'Unknown error',
+            at: new Date().toISOString(),
+          };
+          runErrors = appendError(runErrors, error);
+          await markGenerationFailed(record.id, error.message);
+          await update({
+            current: state.current + 1,
+            failed: state.failed + 1,
+            errors: runErrors,
+            message: `Failed ${result.fileName}: ${error.message}`,
+          });
+        }
+      }
+
+      if (settings.sync.deleteConversationsAfterSync && ok === records.length) {
+        ensureActive(runId);
         try {
           await deleteConversation(session.token, conversationId, signal);
           deletedConversations += 1;
