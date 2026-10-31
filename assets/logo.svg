@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" stroke="#0f7b6c" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="t"><title id="t">c2n</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" stroke="#0f7b6c" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="t"><title id="t">c2n</title>
   <!-- message-circle -->
   <circle cx="64" cy="62" r="46"/>
   <path d="M34 40l-14 48 14-8"/>
   <!-- sync-cw -->
-  <g stroke-width="5">
-    <path d="M84 39.8v13.3h-13.3"/>
-    <path d="M44 62a20 20 0 0 1 33.3-14.9L84 53.1"/>
-    <path d="M44 84.2v-13.3h13.3"/>
-    <path d="M84 62a20 20 0 0 1-33.3 14.9L44 70.9"/>
+  <g stroke-width="7">
+    <path d="M88 35.4v15.9h-16"/>
+    <path d="M40 62a24 24 0 0 1 40-17.9L88 51.3"/>
+    <path d="M40 88.6v-15.9h16"/>
+    <path d="M88 62a24 24 0 0 1-40 17.9L40 72.7"/>
   </g>
 </svg>
