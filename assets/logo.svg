@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="#0f7b6c" role="img" aria-labelledby="t"><title id="t">c2n</title>
-  <!-- chat bubble with right arrow carved out -->
-  <path fill-rule="evenodd" d="M54 36h20a10 10 0 0 1 10 10v22a10 10 0 0 1-10 10h-12l-14 14 8-14h-2a10 10 0 0 1-10-10V46a10 10 0 0 1 10-10zM58 53h14v8h-14zM72 49l12 8-12 8z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" stroke="#0f7b6c" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="t"><title id="t">c2n</title>
+  <!-- message-circle -->
+  <circle cx="64" cy="62" r="46"/>
+  <path d="M34 40l-14 48 14-8"/>
+  <!-- sync-cw -->
+  <g stroke-width="5">
+    <path d="M84 39.8v13.3h-13.3"/>
+    <path d="M44 62a20 20 0 0 1 33.3-14.9L84 53.1"/>
+    <path d="M44 84.2v-13.3h13.3"/>
+    <path d="M84 62a20 20 0 0 1-33.3 14.9L44 70.9"/>
+  </g>
 </svg>
