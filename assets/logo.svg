@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="#0f7b6c" role="img" aria-labelledby="t"><title id="t">c2n</title>
+  <!-- chat bubble (ChatGPT) -->
+  <path d="M21 34h20a10 10 0 0 1 10 10v22a10 10 0 0 1-10 10h-12l-14 14 8-14h-2a10 10 0 0 1-10-10V44a10 10 0 0 1 10-10z"/>
+  <!-- arrow (sync direction) -->
+  <path d="M57 51h18v6h-18zM75 48l12 6-12 6z"/>
+  <!-- page (Notion) -->
+  <path d="M97 30h8l12 12v44a8 8 0 0 1-8 8h-12a8 8 0 0 1-8-8V38a8 8 0 0 1 8-8z"/>
+</svg>
