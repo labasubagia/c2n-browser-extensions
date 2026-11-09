@@ -53,9 +53,14 @@ jobs:
           name: chrome-mv3
           path: .output/*-chrome.zip
 
+      - name: Get version
+        id: version
+        run: echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+
       - name: Draft GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.version }}
           files: .output/*-chrome.zip
           draft: true
           generate_release_notes: true
