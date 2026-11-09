@@ -49,12 +49,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: chrome-mv3
-          path: .output/chrome-mv3.zip
+          path: .output/*-chrome.zip
 
       - name: Draft GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: .output/chrome-mv3.zip
+          files: .output/*-chrome.zip
           draft: true
           generate_release_notes: true
         env:
@@ -67,9 +67,9 @@ jobs:
           PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
           EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
         run: |
-          npm exec -- wxt submit --chrome \
+          npm exec -- wxt submit \
             --chrome-api-version v2 \
             --chrome-service-account-client-email "$CLIENT_EMAIL" \
             --chrome-service-account-private-key "$PRIVATE_KEY" \
             --chrome-extension-id "$EXTENSION_ID" \
-            --chrome-zip .output/chrome-mv3.zip
+            --chrome-zip .output/*-chrome.zip
