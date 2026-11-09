@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npx biome ci .
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Package zip
+        run: npm run zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-mv3
+          path: .output/chrome-mv3.zip
+
+      - name: Draft GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: .output/chrome-mv3.zip
+          draft: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to Chrome Web Store
+        if: secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL != '' && secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY != '' && secrets.CHROME_EXTENSION_ID != ''
+        env:
+          CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
+          PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
+          EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+        run: |
+          npm exec -- wxt submit --chrome \
+            --chrome-api-version v2 \
+            --chrome-service-account-client-email "$CLIENT_EMAIL" \
+            --chrome-service-account-private-key "$PRIVATE_KEY" \
+            --chrome-extension-id "$EXTENSION_ID" \
+            --chrome-zip .output/chrome-mv3.zip

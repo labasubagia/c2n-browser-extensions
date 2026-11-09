@@ -37,7 +37,7 @@
 - `assets/` — `app.css` Tailwind CSS v4 (`@import 'tailwindcss'`, tokens in `@theme`; no component classes — inline utilities in JSX. Don't hand-write plain CSS).
 - `public/icon/` — extension icons.
 - `docs/` — `architecture.md` (deep technical reference).
-- `.github/workflows/` — CI (`ci.yml`) and PR validation (`pr-template.yml`).
+- `.github/workflows/` — CI (`ci.yml`), PR validation (`pr-template.yml`), release (`release.yml`).
 - `.husky/` — active git hooks. Note: `run/_` is a **stale unused duplicate** of husky shims.
 
 ## Development Commands

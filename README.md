@@ -108,6 +108,26 @@ npm run build        # production build
 npm run zip          # distributable ZIP
 ```
 
+## Release
+
+Releases are built and attached by the `release.yml` workflow. It runs the full CI gate
+(Biome check, typecheck, tests, build), packages `npm run zip`, and drafts a GitHub Release with
+the zip attached. Trigger it by:
+
+- Pushing a tag `vX.Y.Z` (e.g. `git tag v0.1.1 && git push origin v0.1.1`), or
+- Running the **Release** workflow manually from the Actions tab.
+
+Before tagging, bump `version` in `package.json` (semver; Chrome rejects version downgrades). Check
+the drafted Release, then publish. The zip is also in **Artifacts** as `chrome-mv3`.
+
+Chrome Web Store upload is optional and requires three repo secrets (API v2 service account):
+
+- `CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL`
+- `CHROME_SERVICE_ACCOUNT_PRIVATE_KEY`
+- `CHROME_EXTENSION_ID`
+
+Without them the workflow stops after the draft Release; upload the zip manually instead.
+
 ### WSL
 
 WXT cannot launch a Windows browser from WSL, so `npm run dev` prints:
