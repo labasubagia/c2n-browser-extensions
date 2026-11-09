@@ -17,6 +17,8 @@ jobs:
   release:
     name: Build & Publish
     runs-on: ubuntu-latest
+    env:
+      HAS_CHROME_UPLOAD: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL != '' && secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY != '' && secrets.CHROME_EXTENSION_ID != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,7 +63,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload to Chrome Web Store
-        if: secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL != '' && secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY != '' && secrets.CHROME_EXTENSION_ID != ''
+        if: env.HAS_CHROME_UPLOAD == 'true'
         env:
           CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
           PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
