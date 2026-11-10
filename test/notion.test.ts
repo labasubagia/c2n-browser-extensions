@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPagePayload } from '@/lib/notion';
+import { buildBulkDedupFilters, buildPagePayload } from '@/lib/notion';
 
 describe('Notion page payload', () => {
   it('uses hardcoded Name and Image properties', () => {
@@ -36,5 +36,21 @@ describe('Notion page payload', () => {
       'user@example.com',
     );
     expect(payload.markdown).toContain('**Email:** user@example.com');
+  });
+});
+describe('buildBulkDedupFilters', () => {
+  it('chunks names into OR title filters of at most 100', () => {
+    const names = Array.from({ length: 250 }, (_, i) => `img-${i}.png`);
+    const filters = buildBulkDedupFilters(names);
+    expect(filters).toHaveLength(3);
+    expect(filters.map((filter) => filter.or.length)).toEqual([100, 100, 50]);
+    expect(filters[0]?.or[0]).toEqual({
+      property: 'Name',
+      title: { equals: 'img-0.png' },
+    });
+  });
+
+  it('returns no filters for empty input', () => {
+    expect(buildBulkDedupFilters([])).toEqual([]);
   });
 });

@@ -324,6 +324,28 @@ async function run(
           );
         });
     const selected = candidates.slice(0, settings.sync.limit);
+    let existingNames: Set<string> | undefined;
+    if (settings.sync.checkNotionDuplicates && selected.length) {
+      try {
+        existingNames = await notion.findExistingNames(
+          settings.notion.databaseId,
+          selected.map(
+            (record) =>
+              record.fileName || fileNameForGeneration(record.id, record.url),
+          ),
+          signal,
+        );
+      } catch (error) {
+        if (signal.aborted || isAbortError(error)) {
+          throw error;
+        }
+        const fatal = fatalAuthMessage(error);
+        if (fatal) {
+          throw new Error(fatal);
+        }
+        // Non-fatal bulk prefetch failure: fall back to per-file checks.
+      }
+    }
 
     await update({
       phase: 'processing',
@@ -369,6 +391,7 @@ async function run(
           settings,
           signal,
           email,
+          existingNames,
         );
         ensureActive(runId);
 
@@ -541,6 +564,7 @@ async function processOne(
   settings: Awaited<ReturnType<typeof loadSettings>>,
   signal: AbortSignal,
   email: string | undefined,
+  existingNames?: Set<string>,
 ): Promise<ProcessResult> {
   const fileName =
     record.fileName || fileNameForGeneration(record.id, record.url);
@@ -550,30 +574,35 @@ async function processOne(
     return { outcome: 'skipped', fileName };
   }
   if (settings.sync.checkNotionDuplicates) {
-    try {
-      const exists = await notion.isPageExists(
-        settings.notion.databaseId,
-        fileName,
-        signal,
-      );
-      if (exists) {
-        await markGenerationUploaded(record.id);
-        return { outcome: 'skipped', fileName };
+    let exists = false;
+    if (existingNames) {
+      exists = existingNames.has(fileName);
+    } else {
+      try {
+        exists = await notion.isPageExists(
+          settings.notion.databaseId,
+          fileName,
+          signal,
+        );
+      } catch (error) {
+        if (isAbortError(error) || signal.aborted) {
+          throw error;
+        }
+        const fatal = fatalAuthMessage(error);
+        if (fatal) {
+          throw new Error(fatal);
+        }
+        return {
+          outcome: 'failed',
+          fileName,
+          stage: 'notion_check',
+          error: errorMessage(error),
+        };
       }
-    } catch (error) {
-      if (isAbortError(error) || signal.aborted) {
-        throw error;
-      }
-      const fatal = fatalAuthMessage(error);
-      if (fatal) {
-        throw new Error(fatal);
-      }
-      return {
-        outcome: 'failed',
-        fileName,
-        stage: 'notion_check',
-        error: errorMessage(error),
-      };
+    }
+    if (exists) {
+      await markGenerationUploaded(record.id);
+      return { outcome: 'skipped', fileName };
     }
   }
 
