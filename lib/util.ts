@@ -226,7 +226,8 @@ export function isAbortError(error: unknown): boolean {
 
 export interface SyncProgress {
   deleting: boolean;
-  percent: number;
+  uploadPercent: number;
+  deletePercent: number;
 }
 export function computeSyncProgress(sync: SyncState): SyncProgress {
   const deleting =
@@ -234,13 +235,15 @@ export function computeSyncProgress(sync: SyncState): SyncProgress {
     sync.current >= sync.total &&
     sync.deletedTotal > 0 &&
     sync.deleted < sync.deletedTotal;
-  const tasksDone = sync.current + sync.deleted;
-  const tasksTotal = sync.total + sync.deletedTotal;
-  const percent =
-    tasksTotal > 0
-      ? Math.min(100, Math.round((tasksDone / tasksTotal) * 100))
+  const uploadPercent =
+    sync.total > 0
+      ? Math.min(100, Math.round((sync.current / sync.total) * 100))
       : 0;
-  return { deleting, percent };
+  const deletePercent =
+    sync.deletedTotal > 0
+      ? Math.min(100, Math.round((sync.deleted / sync.deletedTotal) * 100))
+      : 0;
+  return { deleting, uploadPercent, deletePercent };
 }
 
 export function conversationsToDelete(
