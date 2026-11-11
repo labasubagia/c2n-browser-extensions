@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.2.1] - 2026-11-11
+
+### Changed
+
+- Split the single sync progress bar into two independent tracks: image upload (`current/total`) and conversation deletion (`deleted/deletedTotal`). Previously one merged bar diluted upload percentage with the deletion denominator and toggled labels mid-run.
+- Popup renders separate "Uploading images" and "Deleting conversations" bars; the delete bar appears only while deletion is active.
+
 ## [0.2.0] - 2026-11-11
 
 ### Added
