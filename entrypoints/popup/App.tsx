@@ -10,7 +10,7 @@ import {
 import { shouldRedirectToChatGPT } from '@/lib/popup-redirect';
 import { loadSettings, saveSettings } from '@/lib/settings';
 import type { SyncState } from '@/lib/types';
-import { errorMessage } from '@/lib/util';
+import { computeSyncProgress, errorMessage } from '@/lib/util';
 
 function formatDateTime(value: number | undefined): string {
   if (!value) {
@@ -189,21 +189,7 @@ export default function App() {
   const configured = status.notionConfigured;
   const authOk = status.auth.present;
   const libraryRunning = status.library.running;
-  const deleting =
-    running &&
-    status.sync.deletedTotal > 0 &&
-    status.sync.deleted < status.sync.deletedTotal;
-  const progress = deleting
-    ? Math.min(
-        100,
-        Math.round((status.sync.deleted / status.sync.deletedTotal) * 100),
-      )
-    : status.sync.total
-      ? Math.min(
-          100,
-          Math.round((status.sync.current / status.sync.total) * 100),
-        )
-      : 0;
+  const { deleting, percent: progress } = computeSyncProgress(status.sync);
   const errors = status.sync.errors.slice(-4);
   const githubUrl = (
     import.meta.env as Record<string, string | undefined>

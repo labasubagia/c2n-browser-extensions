@@ -1,3 +1,5 @@
+import type { SyncState } from './types';
+
 const IMAGE_EXTENSIONS = new Set([
   '.png',
   '.jpg',
@@ -220,4 +222,19 @@ export function isAbortError(error: unknown): boolean {
     (error instanceof DOMException && error.name === 'AbortError') ||
     (error instanceof Error && error.name === 'AbortError')
   );
+}
+
+export interface SyncProgress {
+  deleting: boolean;
+  percent: number;
+}
+export function computeSyncProgress(sync: SyncState): SyncProgress {
+  const deleting =
+    sync.running && sync.deletedTotal > 0 && sync.deleted < sync.deletedTotal;
+  const percent = deleting
+    ? Math.min(100, Math.round((sync.deleted / sync.deletedTotal) * 100))
+    : sync.total
+      ? Math.min(100, Math.round((sync.current / sync.total) * 100))
+      : 0;
+  return { deleting, percent };
 }

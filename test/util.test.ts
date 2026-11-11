@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { SyncState } from '@/lib/types';
 import {
+  computeSyncProgress,
   contentTypeForFileName,
   decodeJwtPayload,
   extractEmailFromJwt,
@@ -9,6 +11,27 @@ import {
   sanitizeFileStem,
   timestampToIso,
 } from '@/lib/util';
+
+function baseState(overrides: Partial<SyncState> = {}): SyncState {
+  return {
+    running: false,
+    phase: 'idle',
+    runId: null,
+    startedAt: null,
+    finishedAt: null,
+    discovered: 0,
+    total: 0,
+    current: 0,
+    uploaded: 0,
+    skipped: 0,
+    deleted: 0,
+    deletedTotal: 0,
+    failed: 0,
+    message: '',
+    errors: [],
+    ...overrides,
+  };
+}
 
 describe('file naming', () => {
   it('keeps safe ID characters', () => {
@@ -92,5 +115,67 @@ describe('time and JWT helpers', () => {
     expect(extractEmailFromJwt(decodeJwtPayload(token))).toBe(
       'auth@example.com',
     );
+  });
+});
+
+describe('computeSyncProgress', () => {
+  it('reports 0% when idle with nothing to process', () => {
+    expect(computeSyncProgress(baseState())).toEqual({
+      deleting: false,
+      percent: 0,
+    });
+  });
+
+  it('shows processing progress while running', () => {
+    const sync = baseState({
+      running: true,
+      phase: 'processing',
+      total: 10,
+      current: 5,
+    });
+    expect(computeSyncProgress(sync)).toEqual({
+      deleting: false,
+      percent: 50,
+    });
+  });
+
+  it('swaps to deletion progress once deletion starts', () => {
+    const sync = baseState({
+      running: true,
+      phase: 'processing',
+      total: 10,
+      current: 10,
+      deletedTotal: 5,
+      deleted: 2,
+    });
+    const progress = computeSyncProgress(sync);
+    expect(progress.deleting).toBe(true);
+    expect(progress.percent).toBe(40);
+  });
+
+  it('never reports deletion when not running', () => {
+    const sync = baseState({
+      running: false,
+      total: 10,
+      current: 10,
+      deletedTotal: 5,
+      deleted: 1,
+    });
+    const progress = computeSyncProgress(sync);
+    expect(progress.deleting).toBe(false);
+    expect(progress.percent).toBe(100);
+  });
+
+  it('leaves deletion once all conversations are deleted', () => {
+    const sync = baseState({
+      running: true,
+      total: 10,
+      current: 10,
+      deletedTotal: 5,
+      deleted: 5,
+    });
+    const progress = computeSyncProgress(sync);
+    expect(progress.deleting).toBe(false);
+    expect(progress.percent).toBe(100);
   });
 });
