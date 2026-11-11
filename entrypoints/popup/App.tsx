@@ -189,9 +189,21 @@ export default function App() {
   const configured = status.notionConfigured;
   const authOk = status.auth.present;
   const libraryRunning = status.library.running;
-  const progress = status.sync.total
-    ? Math.min(100, Math.round((status.sync.current / status.sync.total) * 100))
-    : 0;
+  const deleting =
+    running &&
+    status.sync.deletedTotal > 0 &&
+    status.sync.deleted < status.sync.deletedTotal;
+  const progress = deleting
+    ? Math.min(
+        100,
+        Math.round((status.sync.deleted / status.sync.deletedTotal) * 100),
+      )
+    : status.sync.total
+      ? Math.min(
+          100,
+          Math.round((status.sync.current / status.sync.total) * 100),
+        )
+      : 0;
   const errors = status.sync.errors.slice(-4);
   const githubUrl = (
     import.meta.env as Record<string, string | undefined>
@@ -320,10 +332,21 @@ export default function App() {
               />
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-between text-xs text-muted">
-              <span>
-                {status.sync.current} / {status.sync.total || '—'} processed
-              </span>
-              <span>{progress}%</span>
+              {deleting ? (
+                <>
+                  <span>
+                    {status.sync.deleted} / {status.sync.deletedTotal} deleted
+                  </span>
+                  <span>{progress}%</span>
+                </>
+              ) : (
+                <>
+                  <span>
+                    {status.sync.current} / {status.sync.total || '—'} processed
+                  </span>
+                  <span>{progress}%</span>
+                </>
+              )}
             </div>
           </div>
         )}

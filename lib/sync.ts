@@ -91,6 +91,7 @@ const EMPTY_STATE: SyncState = {
   failed: 0,
   deleted: 0,
   message: '',
+  deletedTotal: 0,
   errors: [],
 };
 
@@ -569,6 +570,9 @@ async function run(
           )
           .map(([conversationId]) => conversationId)
       : [];
+    if (deletionsToDo.length) {
+      await update({ deletedTotal: deletionsToDo.length });
+    }
     for (let i = 0; i < deletionsToDo.length; i += 1) {
       const conversationId = deletionsToDo[i];
       if (!conversationId) {

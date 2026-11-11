@@ -92,6 +92,7 @@ export interface SyncState {
   skipped: number;
   deleted: number;
   failed: number;
+  deletedTotal: number;
   message: string;
   errors: RunError[];
 }
