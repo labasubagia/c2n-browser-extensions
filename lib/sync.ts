@@ -450,66 +450,79 @@ async function run(
       });
     };
 
-    const outcomes = await mapWithConcurrency(
-      selected,
-      SYNC_CONCURRENCY,
-      (record) =>
-        processOne(
-          record,
-          session.token,
-          notion,
-          settings,
-          poolSignal,
-          email,
-          existingNames,
-        )
-          .then((result) => {
-            enqueueStateUpdate(async () => {
-              if (result.outcome === 'uploaded') {
-                await update({
-                  current: state.current + 1,
-                  uploaded: state.uploaded + 1,
-                  message: `Uploaded ${result.fileName}`,
-                });
-              } else if (result.outcome === 'skipped') {
-                await update({
-                  current: state.current + 1,
-                  skipped: state.skipped + 1,
-                  message: `Skipped ${result.fileName} (already in Notion)`,
-                });
-              } else {
-                const error: RunError = {
-                  id: record.id,
-                  fileName: result.fileName,
-                  stage: result.stage ?? 'upload',
-                  message: result.error ?? 'Unknown error',
-                  at: new Date().toISOString(),
-                };
-                runErrors = appendError(runErrors, error);
-                await markGenerationFailed(record.id, error.message);
-                await update({
-                  current: state.current + 1,
-                  failed: state.failed + 1,
-                  errors: runErrors,
-                  message: `Failed ${result.fileName}: ${error.message}`,
-                });
+    let outcomes: Array<ProcessResult | null>;
+    try {
+      outcomes = await mapWithConcurrency(
+        selected,
+        SYNC_CONCURRENCY,
+        (record) =>
+          processOne(
+            record,
+            session.token,
+            notion,
+            settings,
+            poolSignal,
+            email,
+            existingNames,
+          )
+            .then((result) => {
+              enqueueStateUpdate(async () => {
+                if (result.outcome === 'uploaded') {
+                  await update({
+                    current: state.current + 1,
+                    uploaded: state.uploaded + 1,
+                    message: `Uploaded ${result.fileName}`,
+                  });
+                } else if (result.outcome === 'skipped') {
+                  await update({
+                    current: state.current + 1,
+                    skipped: state.skipped + 1,
+                    message: `Skipped ${result.fileName} (already in Notion)`,
+                  });
+                } else {
+                  const error: RunError = {
+                    id: record.id,
+                    fileName: result.fileName,
+                    stage: result.stage ?? 'upload',
+                    message: result.error ?? 'Unknown error',
+                    at: new Date().toISOString(),
+                  };
+                  runErrors = appendError(runErrors, error);
+                  await markGenerationFailed(record.id, error.message);
+                  await update({
+                    current: state.current + 1,
+                    failed: state.failed + 1,
+                    errors: runErrors,
+                    message: `Failed ${result.fileName}: ${error.message}`,
+                  });
+                }
+              });
+              return result;
+            })
+            .catch((error: unknown) => {
+              if (poolSignal.aborted || isAbortError(error)) {
+                return null;
               }
-            });
-            return result;
-          })
-          .catch((error: unknown) => {
-            if (poolSignal.aborted || isAbortError(error)) {
-              return null;
-            }
-            const fatal = fatalAuthMessage(error);
-            if (fatal) {
-              fatalError = new Error(fatal);
-              poolController.abort();
-              return null;
-            }
-            throw error;
-          }),
-    );
+              const fatal = fatalAuthMessage(error);
+              if (fatal) {
+                fatalError = new Error(fatal);
+                poolController.abort();
+                return null;
+              }
+              throw error;
+            }),
+      );
+    } catch (error) {
+      // Never drop already-enqueued state updates when a worker rejects with a
+      // non-fatal error: drain the queue and surface any update failure first.
+      await progressTail;
+      if (stateUpdateError) {
+        throw stateUpdateError;
+      }
+      throw error;
+    } finally {
+      signal.removeEventListener('abort', onOuterAbort);
+    }
 
     await progressTail;
     if (stateUpdateError) {
