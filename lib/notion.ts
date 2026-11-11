@@ -254,50 +254,66 @@ export class NotionClient {
     databaseId: string,
     names: string[],
     signal: AbortSignal,
+    onProgress?: (done: number, total: number) => Promise<void> | void,
   ): Promise<Set<string>> {
     if (!names.length) {
       return new Set<string>();
     }
     const sources = await this.getDataSources(databaseId, signal);
-    const found = new Set<string>();
+    const chunks: Array<{
+      source: string;
+      filter: { or: Array<Record<string, unknown>> };
+    }> = [];
     for (const source of sources) {
       for (const filter of buildBulkDedupFilters(names)) {
-        let cursor: string | undefined;
-        const seen = new Set<string>();
-        for (;;) {
-          const payload: Record<string, unknown> = {
-            filter,
-            page_size: 100,
-          };
-          if (cursor) {
-            payload.start_cursor = cursor;
-          }
-          const data = asRecord(
-            await this.jsonRequest(
-              `/v1/data_sources/${encodeURIComponent(source)}/query`,
-              { method: 'POST', body: JSON.stringify(payload) },
-              signal,
-            ),
-          );
-          const results = asArray(data?.results);
-          for (const page of results) {
-            const title = pageTitle(page);
-            if (title) {
-              found.add(title);
-            }
-          }
-          if (data?.has_more !== true) {
-            break;
-          }
-          const next = asString(data.next_cursor);
-          if (!next || seen.has(next)) {
-            throw new NotionError(
-              'Notion pagination returned an invalid next_cursor',
-            );
-          }
-          seen.add(next);
-          cursor = next;
+        chunks.push({ source, filter });
+      }
+    }
+    const found = new Set<string>();
+    for (let i = 0; i < chunks.length; i += 1) {
+      const chunk = chunks[i];
+      if (!chunk) {
+        continue;
+      }
+      const { source, filter } = chunk;
+      let cursor: string | undefined;
+      const seen = new Set<string>();
+      for (;;) {
+        const payload: Record<string, unknown> = {
+          filter,
+          page_size: 100,
+        };
+        if (cursor) {
+          payload.start_cursor = cursor;
         }
+        const data = asRecord(
+          await this.jsonRequest(
+            `/v1/data_sources/${encodeURIComponent(source)}/query`,
+            { method: 'POST', body: JSON.stringify(payload) },
+            signal,
+          ),
+        );
+        const results = asArray(data?.results);
+        for (const page of results) {
+          const title = pageTitle(page);
+          if (title) {
+            found.add(title);
+          }
+        }
+        if (data?.has_more !== true) {
+          break;
+        }
+        const next = asString(data.next_cursor);
+        if (!next || seen.has(next)) {
+          throw new NotionError(
+            'Notion pagination returned an invalid next_cursor',
+          );
+        }
+        seen.add(next);
+        cursor = next;
+      }
+      if (onProgress) {
+        await onProgress(i + 1, chunks.length);
       }
     }
     return found;

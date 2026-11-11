@@ -37,6 +37,45 @@ import {
 
 const STATE_KEY = 'syncState';
 const MAX_ERRORS = 50;
+const SYNC_CONCURRENCY = 4;
+
+/**
+ * Run `fn` over `items` with at most `limit` in flight, preserving input order
+ * in the result. Workers are pure: they return values (or throw), and the
+ * caller aggregates afterward — no shared counters mutated in parallel.
+ */
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const index = next;
+      next += 1;
+      if (index >= items.length) {
+        return;
+      }
+      const item = items[index];
+      if (item === undefined) {
+        return;
+      }
+      results[index] = await fn(item, index);
+    }
+  };
+  const settled = await Promise.allSettled(
+    Array.from({ length: Math.min(limit, items.length) }, worker),
+  );
+  const first = settled.find(
+    (s): s is PromiseRejectedResult => s.status === 'rejected',
+  );
+  if (first) {
+    throw first.reason;
+  }
+  return results;
+}
 
 const EMPTY_STATE: SyncState = {
   running: false,
@@ -264,7 +303,15 @@ async function run(
     }
 
     let discovered = 0;
+    const conversationCount = byConversation.size;
+    let conversationIndex = 0;
     for (const [conversationId, conversationItems] of byConversation) {
+      conversationIndex += 1;
+      await update({
+        message:
+          'Discovering prompt metadata… ' +
+          `${conversationIndex}/${conversationCount} conversations`,
+      });
       const missing = conversationItems.filter(
         (item) => !knownById.has(item.id),
       );
@@ -334,6 +381,16 @@ async function run(
               record.fileName || fileNameForGeneration(record.id, record.url),
           ),
           signal,
+          async (done, total) => {
+            try {
+              await update({
+                message:
+                  'Checking Notion for duplicates… ' + `${done}/${total}`,
+              });
+            } catch {
+              // Progress reporting must never break dedup.
+            }
+          },
         );
       } catch (error) {
         if (signal.aborted || isAbortError(error)) {
@@ -379,58 +436,136 @@ async function run(
       groupedByConversation.set(record.conversationId, list);
     }
 
+    // Concurrent processing: workers return their outcome (or throw), and state
+    // is updated only after all workers settle — mirroring g2n's
+    // collect-then-aggregate model so no shared counters race.
+    const poolController = new AbortController();
+    const onOuterAbort = () => poolController.abort();
+    signal.addEventListener('abort', onOuterAbort, { once: true });
+    const poolSignal = poolController.signal;
+
+    let fatalError: unknown;
+    let progressTail: Promise<void> = Promise.resolve();
+    let stateUpdateError: unknown;
+    const enqueueStateUpdate = (apply: () => Promise<void>): void => {
+      // Workers run concurrently, but every state update reads/writes the same
+      // `state` object; chain them so they serialize and no increment is lost.
+      // Keep the chain alive across a failing link; surface the error later.
+      progressTail = progressTail.then(apply).catch((error: unknown) => {
+        stateUpdateError ??= error;
+      });
+    };
+
+    let outcomes: Array<ProcessResult | null>;
+    try {
+      outcomes = await mapWithConcurrency(
+        selected,
+        SYNC_CONCURRENCY,
+        (record) =>
+          processOne(
+            record,
+            session.token,
+            notion,
+            settings,
+            poolSignal,
+            email,
+            existingNames,
+          )
+            .then((result) => {
+              enqueueStateUpdate(async () => {
+                if (result.outcome === 'uploaded') {
+                  await update({
+                    current: state.current + 1,
+                    uploaded: state.uploaded + 1,
+                    message: `Uploaded ${result.fileName}`,
+                  });
+                } else if (result.outcome === 'skipped') {
+                  await update({
+                    current: state.current + 1,
+                    skipped: state.skipped + 1,
+                    message: `Skipped ${result.fileName} (already in Notion)`,
+                  });
+                } else {
+                  const error: RunError = {
+                    id: record.id,
+                    fileName: result.fileName,
+                    stage: result.stage ?? 'upload',
+                    message: result.error ?? 'Unknown error',
+                    at: new Date().toISOString(),
+                  };
+                  runErrors = appendError(runErrors, error);
+                  await markGenerationFailed(record.id, error.message);
+                  await update({
+                    current: state.current + 1,
+                    failed: state.failed + 1,
+                    errors: runErrors,
+                    message: `Failed ${result.fileName}: ${error.message}`,
+                  });
+                }
+              });
+              return result;
+            })
+            .catch((error: unknown) => {
+              if (poolSignal.aborted || isAbortError(error)) {
+                return null;
+              }
+              const fatal = fatalAuthMessage(error);
+              if (fatal) {
+                fatalError = new Error(fatal);
+                poolController.abort();
+                return null;
+              }
+              throw error;
+            }),
+      );
+    } catch (error) {
+      // Never drop already-enqueued state updates when a worker rejects with a
+      // non-fatal error: drain the queue and surface any update failure first.
+      await progressTail;
+      if (stateUpdateError) {
+        throw stateUpdateError;
+      }
+      throw error;
+    } finally {
+      signal.removeEventListener('abort', onOuterAbort);
+    }
+
+    await progressTail;
+    if (stateUpdateError) {
+      throw stateUpdateError;
+    }
+
+    if (signal.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
+    if (fatalError) {
+      throw fatalError;
+    }
+
+    const okCountByConversation = new Map<string, number>();
+    for (let i = 0; i < selected.length; i += 1) {
+      const record = selected[i];
+      if (!record) {
+        continue;
+      }
+      const result = outcomes[i];
+      if (!result) {
+        continue;
+      }
+      if (result.outcome !== 'failed') {
+        okCountByConversation.set(
+          record.conversationId,
+          (okCountByConversation.get(record.conversationId) ?? 0) + 1,
+        );
+      }
+    }
+
     let deletedConversations = 0;
     for (const [conversationId, records] of groupedByConversation) {
-      let ok = 0;
-      for (const record of records) {
-        ensureActive(runId);
-        const result = await processOne(
-          record,
-          session.token,
-          notion,
-          settings,
-          signal,
-          email,
-          existingNames,
-        );
-        ensureActive(runId);
-
-        if (result.outcome !== 'failed') {
-          ok += 1;
-        }
-
-        if (result.outcome === 'uploaded') {
-          await update({
-            current: state.current + 1,
-            uploaded: state.uploaded + 1,
-            message: `Uploaded ${result.fileName}`,
-          });
-        } else if (result.outcome === 'skipped') {
-          await update({
-            current: state.current + 1,
-            skipped: state.skipped + 1,
-            message: `Skipped ${result.fileName} (already in Notion)`,
-          });
-        } else {
-          const error: RunError = {
-            id: record.id,
-            fileName: result.fileName,
-            stage: result.stage ?? 'upload',
-            message: result.error ?? 'Unknown error',
-            at: new Date().toISOString(),
-          };
-          runErrors = appendError(runErrors, error);
-          await markGenerationFailed(record.id, error.message);
-          await update({
-            current: state.current + 1,
-            failed: state.failed + 1,
-            errors: runErrors,
-            message: `Failed ${result.fileName}: ${error.message}`,
-          });
-        }
-      }
-
-      if (settings.sync.deleteConversationsAfterSync && ok === records.length) {
+      if (
+        settings.sync.deleteConversationsAfterSync &&
+        (okCountByConversation.get(conversationId) ?? 0) === records.length
+      ) {
         ensureActive(runId);
         try {
           await deleteConversation(session.token, conversationId, signal);

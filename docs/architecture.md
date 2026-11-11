@@ -34,9 +34,9 @@ Module-level mutable singletons (`let state`) + listener callbacks (`setSyncStat
 
 ## Key Modules
 
-- `lib/notion.ts` — `NotionClient`; `validateDatabase`, `getDataSources` (cached 24h TTL), `findExistingNames` (bulk dup prefetch, chunked OR title filters over `data_sources`), `isPageExists` (per-file dup check fallback), `addPageToDatabase` (createUpload → sendUpload → POST `/v1/pages`); 400 on upload = already-uploaded (idempotent).
+- `lib/notion.ts` — `NotionClient`; `validateDatabase`, `getDataSources` (cached 24h TTL), `findExistingNames` (bulk dup prefetch, chunked OR title filters over `data_sources`, optional progress callback), `isPageExists` (per-file dup check fallback), `addPageToDatabase` (createUpload → sendUpload → POST `/v1/pages`); 400 on upload = already-uploaded (idempotent).
 - `lib/chatgpt.ts` — ChatGPT API client: `getRecentImageGenerations`, `getConversation`, `downloadImage`, `getMe`, `getLibraryImages`, `deleteLibraryFile`, `deleteConversation`, `getPromptFromImageNodeInConversation`, `parseSseEvents`.
-- `lib/sync.ts` — `startSync`/`cancelSync`/`restoreSyncState`/`getSyncState`/`setSyncStateListener`; `run()` → `processOne()`; `fatalAuthMessage()` stops on 401/403; abort via `AbortError`/`ensureActive()`.
+- `lib/sync.ts` — `startSync`/`cancelSync`/`restoreSyncState`/`getSyncState`/`setSyncStateListener`; `run()` → `processOne()`; `fatalAuthMessage()` stops on 401/403; abort via `AbortError`/`ensureActive()`; per-record processing runs through `mapWithConcurrency` (bounded pool, `SYNC_CONCURRENCY=4`); state mutations serialize on a chained promise queue for live progress without lost increments; discovery/dedup phases report incremental `message` updates.
 - `lib/library.ts` — scan (`scanLibrary`) + delete (`deleteScannedLibrary`, concurrency 4); persists `libraryState` + `libraryScan`.
 - `lib/storage.ts` — IndexedDB `c2n` DB v1; stores `generations`(key id), `meta`(key key), `runs`, `libraryRuns` + indexes.
 - `lib/auth.ts` — session capture/validation; `saveObservedToken`, `getUsableAuthSession`, `clearAuthSession`; JWT decode for expiry/email; stored in `browser.storage.session` (fallback local).
