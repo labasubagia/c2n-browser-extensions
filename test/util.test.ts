@@ -140,6 +140,21 @@ describe('computeSyncProgress', () => {
     });
   });
 
+  it('does not report deletion while records are still processing', () => {
+    const sync = baseState({
+      running: true,
+      phase: 'processing',
+      total: 10,
+      current: 5,
+      deletedTotal: 5,
+      deleted: 0,
+    });
+    expect(computeSyncProgress(sync)).toEqual({
+      deleting: false,
+      percent: 33,
+    });
+  });
+
   it('stays monotonic across processing and deletion', () => {
     // All records skip (current reaches total) before deletion even starts:
     // the bar must NOT hit 100% yet.
