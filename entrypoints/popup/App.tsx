@@ -189,7 +189,9 @@ export default function App() {
   const configured = status.notionConfigured;
   const authOk = status.auth.present;
   const libraryRunning = status.library.running;
-  const { deleting, percent: progress } = computeSyncProgress(status.sync);
+  const { deleting, uploadPercent, deletePercent } = computeSyncProgress(
+    status.sync,
+  );
   const errors = status.sync.errors.slice(-4);
   const githubUrl = (
     import.meta.env as Record<string, string | undefined>
@@ -307,33 +309,45 @@ export default function App() {
         )}
 
         {(running || status.sync.total > 0) && (
-          <div className="flex flex-col gap-1.5">
-            <div
-              className="h-[7px] rounded-full bg-surface-muted overflow-hidden border border-edge"
-              aria-hidden="true"
-            >
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-xs text-muted">
+                <span>Uploading images</span>
+                <span>
+                  {status.sync.current} / {status.sync.total || '—'} ·{' '}
+                  {uploadPercent}%
+                </span>
+              </div>
               <div
-                className="h-full bg-accent rounded-full transition-[width] duration-200"
-                style={{ width: `${progress}%` }}
-              />
+                className="h-[7px] rounded-full bg-surface-muted overflow-hidden border border-edge"
+                aria-hidden="true"
+              >
+                <div
+                  className="h-full bg-accent rounded-full transition-[width] duration-200"
+                  style={{ width: `${uploadPercent}%` }}
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap justify-between text-xs text-muted">
-              {deleting ? (
-                <>
+            {deleting && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-xs text-muted">
+                  <span>Deleting conversations</span>
                   <span>
-                    {status.sync.deleted} / {status.sync.deletedTotal} deleted
+                    {status.sync.deleted} / {status.sync.deletedTotal} ·{' '}
+                    {deletePercent}%
                   </span>
-                  <span>{progress}%</span>
-                </>
-              ) : (
-                <>
-                  <span>
-                    {status.sync.current} / {status.sync.total || '—'} processed
-                  </span>
-                  <span>{progress}%</span>
-                </>
-              )}
-            </div>
+                </div>
+                <div
+                  className="h-[7px] rounded-full bg-surface-muted overflow-hidden border border-edge"
+                  aria-hidden="true"
+                >
+                  <div
+                    className="h-full bg-warning rounded-full transition-[width] duration-200"
+                    style={{ width: `${deletePercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 

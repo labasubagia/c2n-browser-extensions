@@ -123,11 +123,12 @@ describe('computeSyncProgress', () => {
   it('reports 0% when idle with nothing to process', () => {
     expect(computeSyncProgress(baseState())).toEqual({
       deleting: false,
-      percent: 0,
+      uploadPercent: 0,
+      deletePercent: 0,
     });
   });
 
-  it('shows processing progress while running', () => {
+  it('reports upload progress while processing', () => {
     const sync = baseState({
       running: true,
       phase: 'processing',
@@ -136,7 +137,8 @@ describe('computeSyncProgress', () => {
     });
     expect(computeSyncProgress(sync)).toEqual({
       deleting: false,
-      percent: 50,
+      uploadPercent: 50,
+      deletePercent: 0,
     });
   });
 
@@ -151,13 +153,14 @@ describe('computeSyncProgress', () => {
     });
     expect(computeSyncProgress(sync)).toEqual({
       deleting: false,
-      percent: 33,
+      uploadPercent: 50,
+      deletePercent: 0,
     });
   });
 
-  it('stays monotonic across processing and deletion', () => {
-    // All records skip (current reaches total) before deletion even starts:
-    // the bar must NOT hit 100% yet.
+  it('separates upload and deletion progress', () => {
+    // All records processed (current reaches total) before deletion starts:
+    // upload is complete, deletion has not begun.
     const beforeDelete = baseState({
       running: true,
       phase: 'processing',
@@ -168,7 +171,8 @@ describe('computeSyncProgress', () => {
     });
     expect(computeSyncProgress(beforeDelete)).toEqual({
       deleting: true,
-      percent: 67,
+      uploadPercent: 100,
+      deletePercent: 0,
     });
 
     const duringDelete = {
@@ -177,7 +181,8 @@ describe('computeSyncProgress', () => {
     };
     expect(computeSyncProgress(duringDelete)).toEqual({
       deleting: true,
-      percent: 80,
+      uploadPercent: 100,
+      deletePercent: 40,
     });
   });
 
@@ -191,7 +196,8 @@ describe('computeSyncProgress', () => {
     });
     const progress = computeSyncProgress(sync);
     expect(progress.deleting).toBe(false);
-    expect(progress.percent).toBe(73);
+    expect(progress.uploadPercent).toBe(100);
+    expect(progress.deletePercent).toBe(20);
   });
 
   it('leaves deletion once all conversations are deleted', () => {
@@ -204,7 +210,8 @@ describe('computeSyncProgress', () => {
     });
     const progress = computeSyncProgress(sync);
     expect(progress.deleting).toBe(false);
-    expect(progress.percent).toBe(100);
+    expect(progress.uploadPercent).toBe(100);
+    expect(progress.deletePercent).toBe(100);
   });
 });
 
