@@ -384,8 +384,7 @@ async function run(
           async (done, total) => {
             try {
               await update({
-                message:
-                  'Checking Notion for duplicates… ' + `${done}/${total}`,
+                message: `Checking Notion for duplicates… ${done}/${total}`,
               });
             } catch {
               // Progress reporting must never break dedup.
@@ -561,33 +560,44 @@ async function run(
     }
 
     let deletedConversations = 0;
-    for (const [conversationId, records] of groupedByConversation) {
-      if (
-        settings.sync.deleteConversationsAfterSync &&
-        (okCountByConversation.get(conversationId) ?? 0) === records.length
-      ) {
-        ensureActive(runId);
-        try {
-          await deleteConversation(session.token, conversationId, signal);
-          deletedConversations += 1;
-          await update({ deleted: state.deleted + 1 });
-        } catch (error) {
-          if (signal.aborted || isAbortError(error)) {
-            throw error;
-          }
-          const fatal = fatalAuthMessage(error);
-          if (fatal) {
-            throw new Error(fatal);
-          }
-          runErrors = appendError(runErrors, {
-            id: conversationId,
-            fileName: '—',
-            stage: 'run',
-            message: `Failed to delete conversation: ${errorMessage(error)}`,
-            at: new Date().toISOString(),
-          });
-          await update({ errors: runErrors });
+    const deletionsToDo = settings.sync.deleteConversationsAfterSync
+      ? [...groupedByConversation]
+          .filter(
+            ([conversationId, records]) =>
+              (okCountByConversation.get(conversationId) ?? 0) ===
+              records.length,
+          )
+          .map(([conversationId]) => conversationId)
+      : [];
+    for (let i = 0; i < deletionsToDo.length; i += 1) {
+      const conversationId = deletionsToDo[i];
+      if (!conversationId) {
+        continue;
+      }
+      ensureActive(runId);
+      await update({
+        message: `Deleting conversation ${i + 1}/${deletionsToDo.length}…`,
+      });
+      try {
+        await deleteConversation(session.token, conversationId, signal);
+        deletedConversations += 1;
+        await update({ deleted: state.deleted + 1 });
+      } catch (error) {
+        if (signal.aborted || isAbortError(error)) {
+          throw error;
         }
+        const fatal = fatalAuthMessage(error);
+        if (fatal) {
+          throw new Error(fatal);
+        }
+        runErrors = appendError(runErrors, {
+          id: conversationId,
+          fileName: '—',
+          stage: 'run',
+          message: `Failed to delete conversation: ${errorMessage(error)}`,
+          at: new Date().toISOString(),
+        });
+        await update({ errors: runErrors });
       }
     }
     await finish(
