@@ -10,7 +10,7 @@ import {
 import { shouldRedirectToChatGPT } from '@/lib/popup-redirect';
 import { loadSettings, saveSettings } from '@/lib/settings';
 import type { SyncState } from '@/lib/types';
-import { errorMessage } from '@/lib/util';
+import { computeSyncProgress, errorMessage } from '@/lib/util';
 
 function formatDateTime(value: number | undefined): string {
   if (!value) {
@@ -189,9 +189,7 @@ export default function App() {
   const configured = status.notionConfigured;
   const authOk = status.auth.present;
   const libraryRunning = status.library.running;
-  const progress = status.sync.total
-    ? Math.min(100, Math.round((status.sync.current / status.sync.total) * 100))
-    : 0;
+  const { deleting, percent: progress } = computeSyncProgress(status.sync);
   const errors = status.sync.errors.slice(-4);
   const githubUrl = (
     import.meta.env as Record<string, string | undefined>
@@ -320,10 +318,21 @@ export default function App() {
               />
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-between text-xs text-muted">
-              <span>
-                {status.sync.current} / {status.sync.total || '—'} processed
-              </span>
-              <span>{progress}%</span>
+              {deleting ? (
+                <>
+                  <span>
+                    {status.sync.deleted} / {status.sync.deletedTotal} deleted
+                  </span>
+                  <span>{progress}%</span>
+                </>
+              ) : (
+                <>
+                  <span>
+                    {status.sync.current} / {status.sync.total || '—'} processed
+                  </span>
+                  <span>{progress}%</span>
+                </>
+              )}
             </div>
           </div>
         )}

@@ -1,3 +1,5 @@
+import type { SyncState } from './types';
+
 const IMAGE_EXTENSIONS = new Set([
   '.png',
   '.jpg',
@@ -220,4 +222,40 @@ export function isAbortError(error: unknown): boolean {
     (error instanceof DOMException && error.name === 'AbortError') ||
     (error instanceof Error && error.name === 'AbortError')
   );
+}
+
+export interface SyncProgress {
+  deleting: boolean;
+  percent: number;
+}
+export function computeSyncProgress(sync: SyncState): SyncProgress {
+  const deleting =
+    sync.running &&
+    sync.current >= sync.total &&
+    sync.deletedTotal > 0 &&
+    sync.deleted < sync.deletedTotal;
+  const tasksDone = sync.current + sync.deleted;
+  const tasksTotal = sync.total + sync.deletedTotal;
+  const percent =
+    tasksTotal > 0
+      ? Math.min(100, Math.round((tasksDone / tasksTotal) * 100))
+      : 0;
+  return { deleting, percent };
+}
+
+export function conversationsToDelete(
+  deleteEnabled: boolean,
+  groupedByConversation: ReadonlyMap<string, readonly unknown[]>,
+  okCountByConversation: ReadonlyMap<string, number>,
+): string[] {
+  if (!deleteEnabled) {
+    return [];
+  }
+  const result: string[] = [];
+  for (const [conversationId, records] of groupedByConversation) {
+    if ((okCountByConversation.get(conversationId) ?? 0) === records.length) {
+      result.push(conversationId);
+    }
+  }
+  return result;
 }
