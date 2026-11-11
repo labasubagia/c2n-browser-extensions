@@ -238,3 +238,20 @@ export function computeSyncProgress(sync: SyncState): SyncProgress {
       : 0;
   return { deleting, percent };
 }
+
+export function conversationsToDelete(
+  deleteEnabled: boolean,
+  groupedByConversation: ReadonlyMap<string, readonly unknown[]>,
+  okCountByConversation: ReadonlyMap<string, number>,
+): string[] {
+  if (!deleteEnabled) {
+    return [];
+  }
+  const result: string[] = [];
+  for (const [conversationId, records] of groupedByConversation) {
+    if ((okCountByConversation.get(conversationId) ?? 0) === records.length) {
+      result.push(conversationId);
+    }
+  }
+  return result;
+}

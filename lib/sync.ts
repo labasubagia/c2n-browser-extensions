@@ -29,6 +29,7 @@ import type {
   SyncState,
 } from './types';
 import {
+  conversationsToDelete,
   errorMessage,
   fileNameForGeneration,
   isAbortError,
@@ -561,15 +562,11 @@ async function run(
     }
 
     let deletedConversations = 0;
-    const deletionsToDo = settings.sync.deleteConversationsAfterSync
-      ? [...groupedByConversation]
-          .filter(
-            ([conversationId, records]) =>
-              (okCountByConversation.get(conversationId) ?? 0) ===
-              records.length,
-          )
-          .map(([conversationId]) => conversationId)
-      : [];
+    const deletionsToDo = conversationsToDelete(
+      settings.sync.deleteConversationsAfterSync,
+      groupedByConversation,
+      okCountByConversation,
+    );
     if (deletionsToDo.length) {
       await update({ deletedTotal: deletionsToDo.length });
     }

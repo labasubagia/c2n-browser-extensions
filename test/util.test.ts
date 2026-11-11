@@ -3,6 +3,7 @@ import type { SyncState } from '@/lib/types';
 import {
   computeSyncProgress,
   contentTypeForFileName,
+  conversationsToDelete,
   decodeJwtPayload,
   extractEmailFromJwt,
   fileNameForGeneration,
@@ -177,5 +178,73 @@ describe('computeSyncProgress', () => {
     const progress = computeSyncProgress(sync);
     expect(progress.deleting).toBe(false);
     expect(progress.percent).toBe(100);
+  });
+});
+
+describe('conversationsToDelete', () => {
+  const grouped = new Map<string, unknown[]>([
+    ['a', [1, 2, 3]],
+    ['b', [1, 2]],
+    ['c', [1]],
+  ]);
+
+  it('deletes nothing when delete is disabled', () => {
+    expect(
+      conversationsToDelete(
+        false,
+        grouped,
+        new Map([
+          ['a', 3],
+          ['b', 2],
+          ['c', 1],
+        ]),
+      ),
+    ).toEqual([]);
+  });
+
+  it('deletes every full-ok conversation when enabled', () => {
+    expect(
+      conversationsToDelete(
+        true,
+        grouped,
+        new Map([
+          ['a', 3],
+          ['b', 2],
+          ['c', 1],
+        ]),
+      ),
+    ).toEqual(['a', 'b', 'c']);
+  });
+
+  it('deletes only conversations with all records ok', () => {
+    expect(
+      conversationsToDelete(
+        true,
+        grouped,
+        new Map([
+          ['a', 2],
+          ['b', 2],
+          ['c', 0],
+        ]),
+      ),
+    ).toEqual(['b']);
+  });
+
+  it('deletes nothing when no conversation is fully ok', () => {
+    expect(
+      conversationsToDelete(
+        true,
+        grouped,
+        new Map([
+          ['a', 1],
+          ['b', 0],
+          ['c', 0],
+        ]),
+      ),
+    ).toEqual([]);
+  });
+
+  it('ignores conversations missing from the ok-count map', () => {
+    expect(conversationsToDelete(true, grouped, new Map())).toEqual([]);
   });
 });
