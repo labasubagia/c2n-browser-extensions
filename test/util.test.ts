@@ -140,18 +140,30 @@ describe('computeSyncProgress', () => {
     });
   });
 
-  it('swaps to deletion progress once deletion starts', () => {
-    const sync = baseState({
+  it('stays monotonic across processing and deletion', () => {
+    // All records skip (current reaches total) before deletion even starts:
+    // the bar must NOT hit 100% yet.
+    const beforeDelete = baseState({
       running: true,
       phase: 'processing',
       total: 10,
       current: 10,
       deletedTotal: 5,
-      deleted: 2,
+      deleted: 0,
     });
-    const progress = computeSyncProgress(sync);
-    expect(progress.deleting).toBe(true);
-    expect(progress.percent).toBe(40);
+    expect(computeSyncProgress(beforeDelete)).toEqual({
+      deleting: true,
+      percent: 67,
+    });
+
+    const duringDelete = {
+      ...beforeDelete,
+      deleted: 2,
+    };
+    expect(computeSyncProgress(duringDelete)).toEqual({
+      deleting: true,
+      percent: 80,
+    });
   });
 
   it('never reports deletion when not running', () => {
@@ -164,7 +176,7 @@ describe('computeSyncProgress', () => {
     });
     const progress = computeSyncProgress(sync);
     expect(progress.deleting).toBe(false);
-    expect(progress.percent).toBe(100);
+    expect(progress.percent).toBe(73);
   });
 
   it('leaves deletion once all conversations are deleted', () => {

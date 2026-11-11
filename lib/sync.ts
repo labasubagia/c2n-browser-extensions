@@ -437,6 +437,10 @@ async function run(
       groupedByConversation.set(record.conversationId, list);
     }
 
+    if (settings.sync.deleteConversationsAfterSync) {
+      await update({ deletedTotal: groupedByConversation.size });
+    }
+
     // Concurrent processing: workers return their outcome (or throw), and state
     // is updated only after all workers settle — mirroring g2n's
     // collect-then-aggregate model so no shared counters race.
@@ -567,7 +571,7 @@ async function run(
       groupedByConversation,
       okCountByConversation,
     );
-    if (deletionsToDo.length) {
+    if (deletionsToDo.length !== state.deletedTotal) {
       await update({ deletedTotal: deletionsToDo.length });
     }
     for (let i = 0; i < deletionsToDo.length; i += 1) {

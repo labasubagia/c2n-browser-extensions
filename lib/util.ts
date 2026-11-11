@@ -231,10 +231,11 @@ export interface SyncProgress {
 export function computeSyncProgress(sync: SyncState): SyncProgress {
   const deleting =
     sync.running && sync.deletedTotal > 0 && sync.deleted < sync.deletedTotal;
-  const percent = deleting
-    ? Math.min(100, Math.round((sync.deleted / sync.deletedTotal) * 100))
-    : sync.total
-      ? Math.min(100, Math.round((sync.current / sync.total) * 100))
+  const tasksDone = sync.current + sync.deleted;
+  const tasksTotal = sync.total + sync.deletedTotal;
+  const percent =
+    tasksTotal > 0
+      ? Math.min(100, Math.round((tasksDone / tasksTotal) * 100))
       : 0;
   return { deleting, percent };
 }
