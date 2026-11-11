@@ -65,9 +65,15 @@ async function mapWithConcurrency<T, R>(
       results[index] = await fn(item, index);
     }
   };
-  await Promise.all(
+  const settled = await Promise.allSettled(
     Array.from({ length: Math.min(limit, items.length) }, worker),
   );
+  const first = settled.find(
+    (s): s is PromiseRejectedResult => s.status === 'rejected',
+  );
+  if (first) {
+    throw first.reason;
+  }
   return results;
 }
 
