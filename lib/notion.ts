@@ -9,6 +9,7 @@ import {
 
 export const NOTION_BASE_URL = 'https://api.notion.com';
 const DATA_SOURCE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const NOTION_FILTER_CHUNK_SIZE = 100;
 
 export class NotionError extends Error {
   constructor(message: string) {
@@ -45,6 +46,20 @@ function pageTitle(page: unknown): string {
     out += text;
   }
   return out;
+}
+export function buildBulkDedupFilters(
+  names: string[],
+): Array<{ or: Array<Record<string, unknown>> }> {
+  const filters: Array<{ or: Array<Record<string, unknown>> }> = [];
+  for (let i = 0; i < names.length; i += NOTION_FILTER_CHUNK_SIZE) {
+    filters.push({
+      or: names.slice(i, i + NOTION_FILTER_CHUNK_SIZE).map((name) => ({
+        property: 'Name',
+        title: { equals: name },
+      })),
+    });
+  }
+  return filters;
 }
 
 export function buildPagePayload(
@@ -234,6 +249,58 @@ export class NotionClient {
       }
     }
     return false;
+  }
+  async findExistingNames(
+    databaseId: string,
+    names: string[],
+    signal: AbortSignal,
+  ): Promise<Set<string>> {
+    if (!names.length) {
+      return new Set<string>();
+    }
+    const sources = await this.getDataSources(databaseId, signal);
+    const found = new Set<string>();
+    for (const source of sources) {
+      for (const filter of buildBulkDedupFilters(names)) {
+        let cursor: string | undefined;
+        const seen = new Set<string>();
+        for (;;) {
+          const payload: Record<string, unknown> = {
+            filter,
+            page_size: 100,
+          };
+          if (cursor) {
+            payload.start_cursor = cursor;
+          }
+          const data = asRecord(
+            await this.jsonRequest(
+              `/v1/data_sources/${encodeURIComponent(source)}/query`,
+              { method: 'POST', body: JSON.stringify(payload) },
+              signal,
+            ),
+          );
+          const results = asArray(data?.results);
+          for (const page of results) {
+            const title = pageTitle(page);
+            if (title) {
+              found.add(title);
+            }
+          }
+          if (data?.has_more !== true) {
+            break;
+          }
+          const next = asString(data.next_cursor);
+          if (!next || seen.has(next)) {
+            throw new NotionError(
+              'Notion pagination returned an invalid next_cursor',
+            );
+          }
+          seen.add(next);
+          cursor = next;
+        }
+      }
+    }
+    return found;
   }
 
   async validateDatabase(

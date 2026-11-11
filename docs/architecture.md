@@ -34,7 +34,7 @@ Module-level mutable singletons (`let state`) + listener callbacks (`setSyncStat
 
 ## Key Modules
 
-- `lib/notion.ts` — `NotionClient`; `validateDatabase`, `getDataSources` (cached 24h TTL), `isPageExists` (dup check), `addPageToDatabase` (createUpload → sendUpload → POST `/v1/pages`); 400 on upload = already-uploaded (idempotent).
+- `lib/notion.ts` — `NotionClient`; `validateDatabase`, `getDataSources` (cached 24h TTL), `findExistingNames` (bulk dup prefetch, chunked OR title filters over `data_sources`), `isPageExists` (per-file dup check fallback), `addPageToDatabase` (createUpload → sendUpload → POST `/v1/pages`); 400 on upload = already-uploaded (idempotent).
 - `lib/chatgpt.ts` — ChatGPT API client: `getRecentImageGenerations`, `getConversation`, `downloadImage`, `getMe`, `getLibraryImages`, `deleteLibraryFile`, `deleteConversation`, `getPromptFromImageNodeInConversation`, `parseSseEvents`.
 - `lib/sync.ts` — `startSync`/`cancelSync`/`restoreSyncState`/`getSyncState`/`setSyncStateListener`; `run()` → `processOne()`; `fatalAuthMessage()` stops on 401/403; abort via `AbortError`/`ensureActive()`.
 - `lib/library.ts` — scan (`scanLibrary`) + delete (`deleteScannedLibrary`, concurrency 4); persists `libraryState` + `libraryScan`.
