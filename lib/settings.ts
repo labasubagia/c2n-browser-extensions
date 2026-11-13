@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS: Settings = {
     checkNotionDuplicates: true,
     embedPromptMetadata: true,
     deleteConversationsAfterSync: false,
+    deleteLibraryImagesAfterSync: false,
   },
   notifyOnFinish: true,
 };
@@ -55,6 +56,9 @@ export function normalizeSettings(settings: Settings): Settings {
       embedPromptMetadata: Boolean(settings.sync.embedPromptMetadata),
       deleteConversationsAfterSync: Boolean(
         settings.sync.deleteConversationsAfterSync,
+      ),
+      deleteLibraryImagesAfterSync: Boolean(
+        settings.sync.deleteLibraryImagesAfterSync,
       ),
     },
     notifyOnFinish: Boolean(settings.notifyOnFinish),
