@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+
+## [0.3.0] - 2026-11-13
+
+### Added
+
+- New option to delete library artifacts (ChatGPT images) when deleting conversations, controlling whether cleanup extends to the library during sync.
+
 ## [0.2.1] - 2026-11-11
 
 ### Changed
