@@ -451,8 +451,8 @@ export default function App() {
                 Also delete library images
               </span>
               <span className="text-[11.5px] text-muted">
-                Deletes this conversation's generated and uploaded image
-                artifacts from the ChatGPT library.
+                Permanently deletes the whole conversation — no undo — and its
+                generated and uploaded image artifacts from the ChatGPT library.
               </span>
             </span>
           </label>
