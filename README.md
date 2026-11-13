@@ -153,6 +153,11 @@ C2N_OUT_DIR=/mnt/c/Users/<you>/c2n-dev npm run dev
 Then load `C:\Users\<you>\c2n-dev\chrome-mv3-dev` as the unpacked extension. The dev server only
 needs to keep running; press `o` + Enter does not help under WSL.
 
+Dev builds pin a stable extension ID (via `manifest.key` in `wxt.config.ts`), so
+reloading the dev build always reuses the same ID regardless of path — Notion
+settings in `browser.storage.local` survive dev reloads. Production/release builds
+omit the key (Chrome Web Store assigns its own ID).
+
 Key modules:
 
 - `entrypoints/chatgpt-auth.content.ts` — MAIN-world fetch/XHR token observer.
