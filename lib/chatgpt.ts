@@ -275,11 +275,26 @@ export async function deleteConversation(
   token: string,
   conversationId: string,
   signal: AbortSignal,
+  deleteArtifacts = false,
 ): Promise<void> {
   try {
-    await requestWithRetry(
-      `${CHATGPT_BASE_URL}/conversation/${encodeURIComponent(conversationId)}`,
-      {
+    let url: string;
+    let init: RequestInit;
+    if (deleteArtifacts) {
+      const u = new URL(
+        `${CHATGPT_BASE_URL}/conversation/id/${encodeURIComponent(conversationId)}`,
+      );
+      u.searchParams.set('delete_generated_artifacts', 'true');
+      u.searchParams.set('delete_uploaded_artifacts', 'true');
+      url = u.toString();
+      init = {
+        method: 'DELETE',
+        headers: chatGptHeaders(token),
+        credentials: 'include',
+      };
+    } else {
+      url = `${CHATGPT_BASE_URL}/conversation/${encodeURIComponent(conversationId)}`;
+      init = {
         method: 'PATCH',
         headers: {
           ...chatGptHeaders(token),
@@ -287,9 +302,9 @@ export async function deleteConversation(
         },
         credentials: 'include',
         body: JSON.stringify({ is_visible: false }),
-      },
-      { signal },
-    );
+      };
+    }
+    await requestWithRetry(url, init, { signal });
   } catch (error) {
     // A conversation already deleted by another run surfaces as a 404 carrying
     // `conversation_deleted`; treat it as already handled (matches c2n).

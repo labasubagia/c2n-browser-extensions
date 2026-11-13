@@ -584,7 +584,12 @@ async function run(
         message: `Deleting conversation ${i + 1}/${deletionsToDo.length}…`,
       });
       try {
-        await deleteConversation(session.token, conversationId, signal);
+        await deleteConversation(
+          session.token,
+          conversationId,
+          signal,
+          settings.sync.deleteLibraryImagesAfterSync,
+        );
         deletedConversations += 1;
         await update({ deleted: state.deleted + 1 });
       } catch (error) {

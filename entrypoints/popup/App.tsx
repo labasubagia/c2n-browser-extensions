@@ -67,12 +67,22 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [deleteConvs, setDeleteConvs] = useState<boolean>(false);
   const [convsLoaded, setConvsLoaded] = useState(false);
+  const [deleteLibraryImages, setDeleteLibraryImages] =
+    useState<boolean>(false);
   const toggleDeleteConvs = async (checked: boolean) => {
     setDeleteConvs(checked);
     const current = await loadSettings();
     await saveSettings({
       ...current,
       sync: { ...current.sync, deleteConversationsAfterSync: checked },
+    });
+  };
+  const toggleDeleteLibraryImages = async (checked: boolean) => {
+    setDeleteLibraryImages(checked);
+    const current = await loadSettings();
+    await saveSettings({
+      ...current,
+      sync: { ...current.sync, deleteLibraryImagesAfterSync: checked },
     });
   };
 
@@ -138,6 +148,7 @@ export default function App() {
   useEffect(() => {
     if (status && !convsLoaded) {
       setDeleteConvs(status.settings.sync.deleteConversationsAfterSync);
+      setDeleteLibraryImages(status.settings.sync.deleteLibraryImagesAfterSync);
       setConvsLoaded(true);
     }
   }, [status, convsLoaded]);
@@ -405,23 +416,43 @@ export default function App() {
           </ul>
         )}
 
-        {!running && (
+        <label className="flex items-start gap-2.25 py-2 border-t border-edge first:border-t-0 first:pt-0">
+          <input
+            type="checkbox"
+            className="mt-0.5 accent-accent"
+            checked={deleteConvs}
+            disabled={Boolean(busy) || libraryRunning}
+            onChange={(event) => void toggleDeleteConvs(event.target.checked)}
+          />
+          <span className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-[12.5px] font-semibold">
+              Delete conversations after sync
+            </span>
+            <span className="text-[11.5px] text-muted">
+              Once every image in a conversation has been uploaded or was
+              already in Notion, deletes the whole conversation from ChatGPT.
+              Any failed upload keeps it.
+            </span>
+          </span>
+        </label>
+        {deleteConvs && (
           <label className="flex items-start gap-2.25 py-2 border-t border-edge first:border-t-0 first:pt-0">
             <input
               type="checkbox"
               className="mt-0.5 accent-accent"
-              checked={deleteConvs}
+              checked={deleteLibraryImages}
               disabled={Boolean(busy) || libraryRunning}
-              onChange={(event) => void toggleDeleteConvs(event.target.checked)}
+              onChange={(event) =>
+                void toggleDeleteLibraryImages(event.target.checked)
+              }
             />
             <span className="flex flex-col gap-0.5 min-w-0">
               <span className="text-[12.5px] font-semibold">
-                Delete conversations after sync
+                Also delete library images
               </span>
               <span className="text-[11.5px] text-muted">
-                Once every image in a conversation has been uploaded or was
-                already in Notion, deletes the whole conversation from ChatGPT.
-                Any failed upload keeps it.
+                Permanently deletes the whole conversation — no undo — and its
+                generated and uploaded image artifacts from the ChatGPT library.
               </span>
             </span>
           </label>

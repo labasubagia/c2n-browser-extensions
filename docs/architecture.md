@@ -21,7 +21,7 @@ chatgpt.com page
  → background saveObservedToken() → browser.storage.session 'authSession'
 ```
 
-**Sync:** UI → `START_SYNC` → background `startSync()` → `lib/sync.ts` pipeline: read generations → look up conversation prompt (optional Notion dup-check) → download image → optional `lib/png.ts` prompt embed → `lib/notion.ts` upload + create page → mark local → optional delete conversation. Progress persisted via `lib/storage.ts` + broadcast `STATE_UPDATE`.
+**Sync:** UI → `START_SYNC` → background `startSync()` → `lib/sync.ts` pipeline: read generations → look up conversation prompt (optional Notion dup-check) → download image → optional `lib/png.ts` prompt embed → `lib/notion.ts` upload + create page → mark local → optional delete conversation (when library-image deletion is enabled, permanently deletes the conversation — no undo — and its generated/uploaded library artifacts via the `DELETE…/conversation/id/…?delete_generated_artifacts=…&delete_uploaded_artifacts=…` endpoint). Progress persisted via `lib/storage.ts` + broadcast `STATE_UPDATE`.
 
 ## Messaging Contract
 

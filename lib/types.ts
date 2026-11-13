@@ -9,6 +9,7 @@ export interface SyncSettings {
   checkNotionDuplicates: boolean;
   embedPromptMetadata: boolean;
   deleteConversationsAfterSync: boolean;
+  deleteLibraryImagesAfterSync: boolean;
 }
 
 export interface Settings {
