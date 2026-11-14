@@ -204,7 +204,8 @@ export default function App() {
                       colSpan={colSpan}
                       className="px-2.5 py-1.5 text-left text-[10.5px] uppercase tracking-[0.08em] text-muted font-semibold border-t border-edge"
                     >
-                      {group.label}
+                      {group.label} · {group.items.length} image
+                      {group.items.length === 1 ? '' : 's'}
                     </th>
                   </tr>
                   {group.items.map((item) => (
