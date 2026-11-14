@@ -25,7 +25,7 @@ chatgpt.com page
 
 ## Messaging Contract
 
-`lib/messages.ts` is the contract between UIs/content scripts and background. Discriminated-union `ExtensionMessage` (incl. `GET_LIMIT`, `GET_SYNCED_GENERATIONS`) + `ResponseMap`; typed `sendMessage<T>()`; background broadcasts `STATE_UPDATE` guarded by `isStateUpdate()`.
+`lib/messages.ts` is the contract between UIs/content scripts and background. Discriminated-union `ExtensionMessage` (incl. `GET_SYNCED_GENERATIONS`) + `ResponseMap`; typed `sendMessage<T>()`; background broadcasts `STATE_UPDATE` guarded by `isStateUpdate()`.
 **Any new message MUST be added to the `ExtensionMessage` union AND `ResponseMap`, and safely handled in the background `handleMessage` switch.**
 
 ## State Management
