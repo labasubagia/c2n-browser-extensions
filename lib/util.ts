@@ -76,17 +76,24 @@ export function generationEstimate(
 ): GenerationEstimate | undefined {
   const todayStart = startOfDay(now).getTime();
   const yesterdayStart = subDays(todayStart, 1).getTime();
-  const yesterday = stamps
-    .map((s) => (s > 10_000_000_000 ? s : s * 1000))
-    .filter((t) => t >= yesterdayStart && t < todayStart);
-  if (yesterday.length === 0) {
+  const normalized = stamps.map((s) => (s > 10_000_000_000 ? s : s * 1000));
+  const yesterday = normalized.filter(
+    (t) => t >= yesterdayStart && t < todayStart,
+  );
+  const today = normalized.filter((t) => t >= todayStart && t <= now);
+  if (yesterday.length === 0 && today.length === 0) {
     return undefined;
   }
-  const firstMs = Math.min(...yesterday);
+  const firstMs = yesterday.length === 0 ? undefined : Math.min(...yesterday);
+  const todayFirstMs = today.length === 0 ? undefined : Math.min(...today);
   return {
     firstMs,
+    todayFirstMs,
     // Calendar day (not fixed 24h) so the local clock time survives DST.
-    nextAllowedMs: addDays(firstMs, 1).getTime() + LIMIT_MARGIN_MS,
+    nextAllowedMs:
+      firstMs === undefined
+        ? undefined
+        : addDays(firstMs, 1).getTime() + LIMIT_MARGIN_MS,
   };
 }
 

@@ -24,20 +24,12 @@ function formatDateTime(value: number | undefined): string {
     minute: '2-digit',
   }).format(new Date(value));
 }
-function formatTime(value: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value));
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
 }
-function isTodayMs(ms: number): boolean {
-  const now = new Date();
-  const date = new Date(ms);
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  );
+function formatDayTime(value: number): string {
+  const date = new Date(value);
+  return `${date.getFullYear()}/${pad2(date.getMonth() + 1)}/${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
 function phaseLabel(sync: SyncState): string {
@@ -253,14 +245,22 @@ export default function App() {
           v{status.version}
         </span>
       </div>
-      {limit?.ok &&
-        limit.estimate &&
-        isTodayMs(limit.estimate.nextAllowedMs) && (
-          <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-surface-muted text-muted border-edge">
-            Estimated start generating images: today at{' '}
-            {formatTime(limit.estimate.nextAllowedMs)}
-          </div>
-        )}
+      {limit?.ok && limit.estimate && (
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-surface-muted text-muted border-edge flex flex-col gap-0.5">
+          {limit.estimate.firstMs !== undefined && (
+            <div>
+              1st generated image yesterday{' '}
+              {formatDayTime(limit.estimate.firstMs)}
+            </div>
+          )}
+          {limit.estimate.todayFirstMs !== undefined && (
+            <div>
+              1st generated image today{' '}
+              {formatDayTime(limit.estimate.todayFirstMs)}
+            </div>
+          )}
+        </div>
+      )}
 
       {!authOk && (
         <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-warning-soft text-ink border-[color-mix(in_srgb,var(--warning)_30%,transparent)] flex flex-col gap-1.5">

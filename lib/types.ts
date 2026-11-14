@@ -99,8 +99,9 @@ export interface SyncState {
   errors: RunError[];
 }
 export interface GenerationEstimate {
-  firstMs: number;
-  nextAllowedMs: number;
+  firstMs?: number;
+  todayFirstMs?: number;
+  nextAllowedMs?: number;
 }
 
 export interface SyncRunRecord {
