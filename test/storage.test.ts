@@ -67,7 +67,8 @@ describe('generation storage', () => {
     await putGeneration(record('later', 'pending', '2026-01-02T00:00:00.000Z'));
 
     const ids = (await getPendingGenerations(10)).map((item) => item.id);
-    expect(ids.sort()).toEqual(['bare', 'later']);
+    // Missing createdAt sorts first ('' fallback); no alpha re-sort.
+    expect(ids).toEqual(['bare', 'later']);
   });
 
   it('marks uploads and failures', async () => {
