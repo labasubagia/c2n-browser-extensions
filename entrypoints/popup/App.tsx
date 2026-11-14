@@ -175,11 +175,16 @@ export default function App() {
       return;
     }
     let cancelled = false;
-    sendMessage({ type: 'GET_LIMIT' }).then((result) => {
-      if (!cancelled) {
-        setLimit(result);
-      }
-    });
+    sendMessage({ type: 'GET_LIMIT' }).then(
+      (result) => {
+        if (!cancelled) {
+          setLimit(result);
+        }
+      },
+      () => {
+        // Background unavailable; leave the limit box hidden.
+      },
+    );
     return () => {
       cancelled = true;
     };

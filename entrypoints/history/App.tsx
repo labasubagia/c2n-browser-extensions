@@ -88,6 +88,9 @@ export default function App() {
         }
         setHistory(result.items);
       },
+      () => {
+        if (!cancelled) setError('Could not load synced history.');
+      },
     );
     return () => {
       cancelled = true;
