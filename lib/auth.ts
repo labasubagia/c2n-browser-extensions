@@ -7,7 +7,7 @@ const DEFAULT_TOKEN_LIFETIME_MS = 55 * 60 * 1000;
 const EXPIRY_SKEW_MS = 30 * 1000;
 
 function sessionArea() {
-  return browser.storage.session ?? browser.storage.local;
+  return browser.storage.local;
 }
 
 export function normalizeBearerToken(raw: string): string {

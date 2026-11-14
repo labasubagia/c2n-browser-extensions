@@ -39,7 +39,7 @@ Module-level mutable singletons (`let state`) + listener callbacks (`setSyncStat
 - `lib/sync.ts` — `startSync`/`cancelSync`/`restoreSyncState`/`getSyncState`/`setSyncStateListener`; `run()` → `processOne()`; `fatalAuthMessage()` stops on 401/403; abort via `AbortError`/`ensureActive()`; per-record processing runs through `mapWithConcurrency` (bounded pool, `SYNC_CONCURRENCY=4`); state mutations serialize on a chained promise queue for live progress without lost increments; discovery/dedup phases report incremental `message` updates.
 - `lib/library.ts` — scan (`scanLibrary`) + delete (`deleteScannedLibrary`, concurrency 4); persists `libraryState` + `libraryScan`.
 - `lib/storage.ts` — IndexedDB `c2n` DB v1; stores `generations`(key id), `meta`(key key), `runs`, `libraryRuns` + indexes.
-- `lib/auth.ts` — session capture/validation; `saveObservedToken`, `getUsableAuthSession`, `clearAuthSession`; JWT decode for expiry/email; stored in `browser.storage.session` (fallback local).
+- `lib/auth.ts` — session capture/validation; `saveObservedToken`, `getUsableAuthSession`, `clearAuthSession`; JWT decode for expiry/email; stored in `browser.storage.local` (survives extension updates; session storage would be cleared on update).
 - `lib/settings.ts` — `Settings`, `DEFAULT_SETTINGS`, `loadSettings`/`saveSettings`, `normalizeSettings`, `validateSettings`, `isNotionConfigured`.
 - `lib/retry.ts` — exponential backoff + jitter; `HttpError` (`status`,`url`,`body`,`retryAfterMs`); `isRetryable` (429/5xx/TypeError); abort-aware `sleep`; `fetchChecked`, `requestWithRetry`, `requestBlobWithRetry`.
 - `lib/util.ts` — pure helpers: `fileNameForGeneration`, `parseNotionDatabaseId`, `decodeJwtPayload`, `extractEmailFromJwt`, `errorMessage`, `isAbortError`, `safeUrl`, `truncate`, `timestampToIso`, `contentTypeForFileName`.
@@ -61,7 +61,7 @@ Module-level mutable singletons (`let state`) + listener callbacks (`setSyncStat
 ## Editing Safety
 
 - `messages.ts` + `types.ts` are the contracts — keep wire fields in sync with raw API shape.
-- Auth token lives only in `browser.storage.session`; must be re-observed from chatgpt.com. `isTokenShaped` (20–8192 chars, no whitespace) gates capture and bridge.
+- Auth token lives in `browser.storage.local`; survives extension updates but not re-observed from chatgpt.com on browser restart. `isTokenShaped` (20–8192 chars, no whitespace) gates capture and bridge.
 - Sync/library mutual exclusion: background rejects `START_SYNC` while library runs and vice-versa.
 - Keep-alive runs only while sync/library running (`syncKeepAlive`).
 
