@@ -41,12 +41,43 @@ function formatDateTime(value: string | number | undefined): string {
   }).format(new Date(ms));
 }
 
+function dayLabelFor(value: string | number | undefined): string {
+  const ms = toDateMs(value);
+  if (ms === undefined) {
+    return 'Unknown date';
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(ms));
+}
+
 export default function App() {
   const [history, setHistory] = useState<SyncedGenerationSummary[] | null>(
     null,
   );
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showUploaded, setShowUploaded] = useState(true);
+  const [showLastSync, setShowLastSync] = useState(true);
+
+  const groups = history
+    ? history.reduce<{ label: string; items: SyncedGenerationSummary[] }[]>(
+        (acc, item) => {
+          const label = dayLabelFor(item.createdAt);
+          const last = acc[acc.length - 1];
+          if (last && last.label === label) {
+            last.items.push(item);
+          } else {
+            acc.push({ label, items: [item] });
+          }
+          return acc;
+        },
+        [],
+      )
+    : null;
+  const colSpan = 4 + (showUploaded ? 1 : 0) + (showLastSync ? 1 : 0);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,6 +139,28 @@ export default function App() {
             Uploaded images
           </span>
           <span className="flex-1" />
+          <button
+            type="button"
+            title={
+              showUploaded ? 'Hide Uploaded column' : 'Show Uploaded column'
+            }
+            aria-pressed={showUploaded}
+            onClick={() => setShowUploaded((v) => !v)}
+            className="appearance-none inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border cursor-pointer transition-colors duration-150 disabled:opacity-50 text-muted border-edge bg-surface enabled:hover:bg-surface-muted"
+          >
+            Uploaded
+          </button>
+          <button
+            type="button"
+            title={
+              showLastSync ? 'Hide Last sync column' : 'Show Last sync column'
+            }
+            aria-pressed={showLastSync}
+            onClick={() => setShowLastSync((v) => !v)}
+            className="appearance-none inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border cursor-pointer transition-colors duration-150 disabled:opacity-50 text-muted border-edge bg-surface enabled:hover:bg-surface-muted"
+          >
+            Last sync
+          </button>
           {history && (
             <span className="inline-flex items-center gap-1.25 rounded-full px-2 py-0.5 text-[11px] font-semibold border whitespace-nowrap max-w-[220px] truncate bg-accent-soft text-success border-[color-mix(in_srgb,var(--success)_25%,transparent)]">
               {history.length} file{history.length === 1 ? '' : 's'}
@@ -126,12 +179,16 @@ export default function App() {
                   <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
                     Created
                   </th>
-                  <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
-                    Uploaded
-                  </th>
-                  <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
-                    Last sync
-                  </th>
+                  {showUploaded && (
+                    <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
+                      Uploaded
+                    </th>
+                  )}
+                  {showLastSync && (
+                    <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
+                      Last sync
+                    </th>
+                  )}
                   <th className="px-2.5 py-2 font-semibold">Filename</th>
                   <th
                     className="px-2.5 py-2 font-semibold w-8"
@@ -142,99 +199,113 @@ export default function App() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
-                {history.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="border-t border-edge align-middle"
-                  >
-                    <td className="px-2.5 py-1.5 text-muted tabular-nums whitespace-nowrap">
-                      {formatDateTime(item.createdAt)}
-                    </td>
-                    <td className="px-2.5 py-1.5 text-muted tabular-nums whitespace-nowrap">
-                      {formatDateTime(item.uploadedAt)}
-                    </td>
-                    <td className="px-2.5 py-1.5 text-muted tabular-nums whitespace-nowrap">
-                      {formatDateTime(item.lastSyncedAt ?? item.uploadedAt)}
-                    </td>
-                    <td className="px-2.5 py-1.5 max-w-[280px] [overflow-wrap:anywhere]">
-                      <a
-                        className="font-medium text-accent hover:underline"
-                        href={item.url}
-                        rel="noreferrer"
-                        target="_blank"
-                        title={item.url}
-                      >
-                        {item.fileName}
-                      </a>
-                    </td>
-                    <td className="px-2.5 py-1.5 text-center">
-                      <button
-                        type="button"
-                        className="appearance-none inline-flex items-center gap-1 text-muted hover:text-ink cursor-pointer transition-colors duration-150"
-                        title="copy prompt"
-                        onClick={() => {
-                          void navigator.clipboard.writeText(item.prompt);
-                          setCopiedId(item.id);
-                          window.setTimeout(
-                            () =>
-                              setCopiedId((current) =>
-                                current === item.id ? null : current,
-                              ),
-                            1500,
-                          );
-                        }}
-                      >
-                        {copiedId === item.id ? (
-                          <svg
-                            aria-hidden="true"
-                            className="size-3.5"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M20 6 9 17l-5-5" />
-                          </svg>
-                        ) : (
-                          <svg
-                            aria-hidden="true"
-                            className="size-3.5"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                          >
-                            <rect
-                              width="14"
-                              height="14"
-                              x="8"
-                              y="8"
-                              rx="2"
-                              ry="2"
-                            />
-                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                          </svg>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-2.5 py-1.5 text-right">
-                      <a
-                        className="inline-flex items-center gap-1 text-muted hover:text-ink"
-                        href={item.url}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        ChatGPT ↗
-                      </a>
-                    </td>
+              {groups?.map((group) => (
+                <tbody key={group.label}>
+                  <tr className="bg-surface-muted">
+                    <th
+                      colSpan={colSpan}
+                      className="px-2.5 py-1.5 text-left text-[10.5px] uppercase tracking-[0.08em] text-muted font-semibold border-t border-edge"
+                    >
+                      {group.label}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
+                  {group.items.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="border-t border-edge align-middle"
+                    >
+                      <td className="px-2.5 py-1.5 text-muted tabular-nums whitespace-nowrap">
+                        {formatDateTime(item.createdAt)}
+                      </td>
+                      {showUploaded && (
+                        <td className="px-2.5 py-1.5 text-muted tabular-nums whitespace-nowrap">
+                          {formatDateTime(item.uploadedAt)}
+                        </td>
+                      )}
+                      {showLastSync && (
+                        <td className="px-2.5 py-1.5 text-muted tabular-nums whitespace-nowrap">
+                          {formatDateTime(item.lastSyncedAt ?? item.uploadedAt)}
+                        </td>
+                      )}
+                      <td className="px-2.5 py-1.5 max-w-[280px] [overflow-wrap:anywhere]">
+                        <a
+                          className="font-medium text-accent hover:underline"
+                          href={item.url}
+                          rel="noreferrer"
+                          target="_blank"
+                          title={item.url}
+                        >
+                          {item.fileName}
+                        </a>
+                      </td>
+                      <td className="px-2.5 py-1.5 text-center">
+                        <button
+                          type="button"
+                          className="appearance-none inline-flex items-center gap-1 text-muted hover:text-ink cursor-pointer transition-colors duration-150"
+                          title="copy prompt"
+                          onClick={() => {
+                            void navigator.clipboard.writeText(item.prompt);
+                            setCopiedId(item.id);
+                            window.setTimeout(
+                              () =>
+                                setCopiedId((current) =>
+                                  current === item.id ? null : current,
+                                ),
+                              1500,
+                            );
+                          }}
+                        >
+                          {copiedId === item.id ? (
+                            <svg
+                              aria-hidden="true"
+                              className="size-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                          ) : (
+                            <svg
+                              aria-hidden="true"
+                              className="size-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <rect
+                                width="14"
+                                height="14"
+                                x="8"
+                                y="8"
+                                rx="2"
+                                ry="2"
+                              />
+                              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                            </svg>
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-2.5 py-1.5 text-right">
+                        <a
+                          className="inline-flex items-center gap-1 text-muted hover:text-ink"
+                          href={item.url}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          ChatGPT ↗
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              ))}
             </table>
           </div>
         )}
