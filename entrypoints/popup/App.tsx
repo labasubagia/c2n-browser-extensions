@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import {
+  type GenerationLimitInfo,
   isStateUpdate,
   openOptionsPage,
   openPage,
@@ -19,6 +20,12 @@ function formatDateTime(value: number | undefined): string {
   return new Intl.DateTimeFormat(undefined, {
     month: 'short',
     day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+function formatTime(value: number): string {
+  return new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
     minute: '2-digit',
   }).format(new Date(value));
@@ -62,6 +69,7 @@ function errorStage(stage: string): string {
 
 export default function App() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
+  const [limit, setLimit] = useState<GenerationLimitInfo | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -152,6 +160,21 @@ export default function App() {
       setConvsLoaded(true);
     }
   }, [status, convsLoaded]);
+  useEffect(() => {
+    if (!status?.auth.present) {
+      setLimit(null);
+      return;
+    }
+    let cancelled = false;
+    sendMessage({ type: 'GET_LIMIT' }).then((result) => {
+      if (!cancelled) {
+        setLimit(result);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [status?.auth.present]);
 
   const start = async (resume: boolean) => {
     setBusy(resume ? 'resume' : 'sync');
@@ -216,6 +239,12 @@ export default function App() {
           v{status.version}
         </span>
       </div>
+      {limit?.ok && limit.estimate && (
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-surface-muted text-muted border-edge">
+          Estimated start generating images: today at{' '}
+          {formatTime(limit.estimate.nextAllowedMs)}
+        </div>
+      )}
 
       {!authOk && (
         <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-warning-soft text-ink border-[color-mix(in_srgb,var(--warning)_30%,transparent)] flex flex-col gap-1.5">
@@ -547,6 +576,13 @@ export default function App() {
       )}
 
       <div className="flex items-center gap-2.5 pt-0.5 text-muted text-[11.5px]">
+        <button
+          className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-2 py-1 text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-transparent text-muted border-transparent enabled:hover:bg-surface-muted enabled:hover:text-ink"
+          onClick={() => openPage('history.html')}
+          type="button"
+        >
+          Synced history
+        </button>
         <button
           className="appearance-none inline-flex items-center justify-center gap-1.5 border rounded-lg px-2 py-1 text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-colors duration-150 enabled:active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed bg-transparent text-muted border-transparent enabled:hover:bg-surface-muted enabled:hover:text-ink"
           onClick={() => openPage('library.html')}

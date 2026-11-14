@@ -100,6 +100,17 @@ export async function getGenerationsByIds(
 export async function getAllGenerations(): Promise<GenerationRecord[]> {
   return (await database()).getAll('generations');
 }
+export async function getUploadedGenerations(
+  limit = 100,
+): Promise<GenerationRecord[]> {
+  const records = await (await database()).getAllFromIndex(
+    'generations',
+    'by-status',
+    'uploaded',
+  );
+  records.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return records.slice(0, limit);
+}
 
 export async function getPendingGenerations(
   limit: number,

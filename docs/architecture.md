@@ -7,7 +7,7 @@ Deep technical reference for the c2n extension. For a high-level orientation and
 - `entrypoints/background.ts` — MV3 service worker; owns all async work. Router `handleMessage` dispatches by `message.type`; restores persisted sync/library state on startup; broadcasts `STATE_UPDATE`; keep-alive while running; notifications gated by `settings.notifyOnFinish`.
 - `entrypoints/chatgpt-auth.content.ts` — content script in **MAIN world**; wraps `fetch`/XHR to read ChatGPT's `Authorization` bearer (webRequest hides it from extensions); posts via `window.postMessage({source:'c2n-auth', type:'token'})`.
 - `entrypoints/chatgpt-bridge.content.ts` — content script at `document_start`; listens for `c2n-auth`, forwards validated token to background (`AUTH_TOKEN_OBSERVED`).
-- React UIs (each `App.tsx`/`main.tsx`/`index.html`): `popup/` (sync controls/status), `options/` (settings + Test connection), `library/` (scan/delete workflow).
+- React UIs (each `App.tsx`/`main.tsx`/`index.html`): `popup/` (sync controls/status), `options/` (settings + Test connection), `library/` (ChatGPT image-library scan/delete workflow), `history/` (synced-to-Notion image history, independent of ChatGPT's library).
 
 ## Data Flow
 
@@ -25,7 +25,7 @@ chatgpt.com page
 
 ## Messaging Contract
 
-`lib/messages.ts` is the contract between UIs/content scripts and background. Discriminated-union `ExtensionMessage` + `ResponseMap`; typed `sendMessage<T>()`; background broadcasts `STATE_UPDATE` guarded by `isStateUpdate()`.
+`lib/messages.ts` is the contract between UIs/content scripts and background. Discriminated-union `ExtensionMessage` (incl. `GET_LIMIT`, `GET_SYNCED_GENERATIONS`) + `ResponseMap`; typed `sendMessage<T>()`; background broadcasts `STATE_UPDATE` guarded by `isStateUpdate()`.
 **Any new message MUST be added to the `ExtensionMessage` union AND `ResponseMap`, and safely handled in the background `handleMessage` switch.**
 
 ## State Management
@@ -35,14 +35,14 @@ Module-level mutable singletons (`let state`) + listener callbacks (`setSyncStat
 ## Key Modules
 
 - `lib/notion.ts` — `NotionClient`; `validateDatabase`, `getDataSources` (cached 24h TTL), `findExistingNames` (bulk dup prefetch, chunked OR title filters over `data_sources`, optional progress callback), `isPageExists` (per-file dup check fallback), `addPageToDatabase` (createUpload → sendUpload → POST `/v1/pages`); 400 on upload = already-uploaded (idempotent).
-- `lib/chatgpt.ts` — ChatGPT API client: `getRecentImageGenerations`, `getConversation`, `downloadImage`, `getMe`, `getLibraryImages`, `deleteLibraryFile`, `deleteConversation`, `getPromptFromImageNodeInConversation`, `parseSseEvents`.
+- `lib/chatgpt.ts` — ChatGPT API client: `getRecentImageGenerations`, `getConversation`, `downloadImage`, `getMe`, `getLibraryImages`, `deleteLibraryFile`, `deleteConversation`, `getPromptFromImageNodeInConversation`, `getMessageCreateTimeFromConversation`, `parseSseEvents`.
 - `lib/sync.ts` — `startSync`/`cancelSync`/`restoreSyncState`/`getSyncState`/`setSyncStateListener`; `run()` → `processOne()`; `fatalAuthMessage()` stops on 401/403; abort via `AbortError`/`ensureActive()`; per-record processing runs through `mapWithConcurrency` (bounded pool, `SYNC_CONCURRENCY=4`); state mutations serialize on a chained promise queue for live progress without lost increments; discovery/dedup phases report incremental `message` updates.
 - `lib/library.ts` — scan (`scanLibrary`) + delete (`deleteScannedLibrary`, concurrency 4); persists `libraryState` + `libraryScan`.
-- `lib/storage.ts` — IndexedDB `c2n` DB v1; stores `generations`(key id), `meta`(key key), `runs`, `libraryRuns` + indexes.
+- `lib/storage.ts` — IndexedDB `c2n` DB v1; stores `generations`(key id), `meta`(key key), `runs`, `libraryRuns` + indexes; `getUploadedGenerations` (newest-first, cap 100) powers the history page's Synced-history list.
 - `lib/auth.ts` — session capture/validation; `saveObservedToken`, `getUsableAuthSession`, `clearAuthSession`; JWT decode for expiry/email; stored in `browser.storage.local` (survives extension updates; session storage would be cleared on update).
 - `lib/settings.ts` — `Settings`, `DEFAULT_SETTINGS`, `loadSettings`/`saveSettings`, `normalizeSettings`, `validateSettings`, `isNotionConfigured`.
 - `lib/retry.ts` — exponential backoff + jitter; `HttpError` (`status`,`url`,`body`,`retryAfterMs`); `isRetryable` (429/5xx/TypeError); abort-aware `sleep`; `fetchChecked`, `requestWithRetry`, `requestBlobWithRetry`.
-- `lib/util.ts` — pure helpers: `fileNameForGeneration`, `parseNotionDatabaseId`, `decodeJwtPayload`, `extractEmailFromJwt`, `errorMessage`, `isAbortError`, `safeUrl`, `truncate`, `timestampToIso`, `contentTypeForFileName`.
+- `lib/util.ts` — pure helpers: `fileNameForGeneration`, `parseNotionDatabaseId`, `decodeJwtPayload`, `extractEmailFromJwt`, `errorMessage`, `isAbortError`, `safeUrl`, `truncate`, `timestampToIso`, `generationEstimate`, `contentTypeForFileName`.
 - `lib/png.ts` — PNG chunk parse/write (crc-32); `injectPromptMetadata` writes 'Prompt' tEXt/iTXt chunk before IEND (idempotent); `getPngPrompt`.
 - `lib/types.ts` — all shared interfaces (Settings, AuthSession/Status, GenerationRecord, SyncState, LibraryState, RunError).
 - `lib/messages.ts` — `ExtensionMessage` union + `ResponseMap`; `openPage`/`openOptionsPage`.

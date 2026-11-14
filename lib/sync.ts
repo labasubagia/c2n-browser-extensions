@@ -4,6 +4,7 @@ import {
   downloadImage,
   getConversation,
   getMe,
+  getMessageCreateTimeFromConversation,
   getPromptFromImageNodeInConversation,
   getRecentImageGenerations,
 } from './chatgpt';
@@ -280,20 +281,30 @@ async function run(
     const known = await getGenerationsByIds(items.map((item) => item.id));
     const knownById = new Map(known.map((record) => [record.id, record]));
 
-    // Signed image URLs expire between runs; refresh them for retries while
-    // keeping the original filename so Notion deduplication stays stable.
+    // Refresh expired signed URLs for retries and backfill missing createdAt
+    // (legacy rows) from the image_gen timestamp so history uses the true
+    // generation time instead of the upload time.
     const refreshed: GenerationRecord[] = [];
     for (const item of items) {
       const existing = knownById.get(item.id);
-      if (
-        existing &&
-        existing.status !== 'uploaded' &&
-        existing.url !== item.url
-      ) {
-        const next = { ...existing, url: item.url };
-        knownById.set(item.id, next);
-        refreshed.push(next);
+      if (!existing) {
+        continue;
       }
+      const needUrl =
+        existing.status !== 'uploaded' && existing.url !== item.url;
+      const needCreated = !existing.createdAt && item.createdAt !== undefined;
+      if (!needUrl && !needCreated) {
+        continue;
+      }
+      const next = { ...existing };
+      if (needUrl) {
+        next.url = item.url;
+      }
+      if (needCreated) {
+        next.createdAt = timestampToIso(item.createdAt ?? 0);
+      }
+      knownById.set(item.id, next);
+      refreshed.push(next);
     }
     await putGenerations(refreshed);
 
@@ -340,7 +351,15 @@ async function run(
           assetPointer: item.assetPointer,
           url: item.url,
           prompt,
-          createdAt: timestampToIso(item.createdAt),
+          createdAt: timestampToIso(
+            item.createdAt ??
+              getMessageCreateTimeFromConversation(
+                details,
+                item.messageId,
+                item.assetPointer,
+              ) ??
+              Date.now(),
+          ),
           fileName: fileNameForGeneration(item.id, item.url),
           status: 'pending',
           attempts: 0,

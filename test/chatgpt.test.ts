@@ -87,13 +87,32 @@ describe('recent image generation normalization', () => {
       createdAt: 1_700_000_000,
     });
   });
+  it('accepts an item with a missing created_at (fallback later)', () => {
+    expect(
+      normalizeImageGenItem({
+        id: 'gen-2',
+        conversation_id: 'conv-1',
+        url: 'https://example.test/b.png',
+      }),
+    ).toEqual({
+      id: 'gen-2',
+      messageId: '',
+      assetPointer: '',
+      conversationId: 'conv-1',
+      url: 'https://example.test/b.png',
+      createdAt: undefined,
+    });
+  });
 
   it('rejects items without required fields', () => {
     expect(
       normalizeImageGenItem({ id: 'gen-1', url: 'https://example.test/a.png' }),
     ).toBeNull();
     expect(
-      normalizeImageGenItem({ id: 'gen-1', conversation_id: 'c', url: 'u' }),
+      normalizeImageGenItem({ conversation_id: 'c', url: 'u' }),
+    ).toBeNull();
+    expect(
+      normalizeImageGenItem({ id: 'gen-1', conversation_id: 'c' }),
     ).toBeNull();
   });
 });

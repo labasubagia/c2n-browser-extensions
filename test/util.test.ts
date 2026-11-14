@@ -7,6 +7,7 @@ import {
   decodeJwtPayload,
   extractEmailFromJwt,
   fileNameForGeneration,
+  generationEstimate,
   imageExtFromUrl,
   parseNotionDatabaseId,
   sanitizeFileStem,
@@ -280,5 +281,40 @@ describe('conversationsToDelete', () => {
 
   it('ignores conversations missing from the ok-count map', () => {
     expect(conversationsToDelete(true, grouped, new Map())).toEqual([]);
+  });
+});
+
+describe('generationEstimate', () => {
+  const DAY = 86400_000;
+  const MARGIN = 60_000;
+
+  it('returns undefined when there are no stamps', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    expect(generationEstimate([], now)).toBeUndefined();
+  });
+
+  it('returns undefined when only today has generations (yesterday empty)', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const todayFirst = new Date(2026, 0, 15, 9, 30, 0).getTime();
+    expect(generationEstimate([todayFirst], now)).toBeUndefined();
+  });
+
+  it('anchors on yesterday first-gen and adds 24h + 1min', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const yesterdayFirst = new Date(2026, 0, 14, 9, 30, 0).getTime();
+    const later = new Date(2026, 0, 14, 11, 0, 0).getTime();
+    expect(generationEstimate([later, yesterdayFirst], now)).toEqual({
+      firstMs: yesterdayFirst,
+      nextAllowedMs: yesterdayFirst + DAY + MARGIN,
+    });
+  });
+
+  it('normalizes epoch-seconds stamps', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const firstMs = new Date(2026, 0, 14, 9, 0, 0).getTime();
+    expect(generationEstimate([firstMs / 1000], now)).toEqual({
+      firstMs,
+      nextAllowedMs: firstMs + DAY + MARGIN,
+    });
   });
 });

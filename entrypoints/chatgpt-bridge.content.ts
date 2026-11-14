@@ -32,24 +32,30 @@ export default defineContentScript({
       }
       lastToken = token;
       lastSentAt = now;
-      void browser.runtime
-        .sendMessage({
-          type: 'AUTH_TOKEN_OBSERVED',
-          token,
-          userAgent: userAgent ?? navigator.userAgent,
-        })
-        .catch(() => {
-          // The worker may be restarting; allow the next request to retry.
-          if (lastToken === token) {
-            lastSentAt = 0;
-          }
-        });
+      try {
+        void browser.runtime
+          .sendMessage({
+            type: 'AUTH_TOKEN_OBSERVED',
+            token,
+            userAgent: userAgent ?? navigator.userAgent,
+          })
+          .catch(() => {
+            // The worker may be restarting; allow the next request to retry.
+            if (lastToken === token) {
+              lastSentAt = 0;
+            }
+          });
+      } catch {
+        // Extension context invalidated (e.g. after a reload/update); stop
+        // attempting to reach the worker until the script is re-injected.
+        lastSentAt = 0;
+      }
     };
 
     const requestCachedToken = (): void => {
       window.postMessage(
         { source: INBOUND_SOURCE, type: 'request-token' },
-        location.origin,
+        '*',
       );
     };
 

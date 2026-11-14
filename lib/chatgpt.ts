@@ -44,9 +44,12 @@ export interface ImageGenItem {
   assetPointer: string;
   conversationId: string;
   url: string;
-  createdAt: number;
+  createdAt?: number;
 }
 
+export interface RecentImageGenResponse {
+  items?: RawImageGenItem[];
+}
 export interface LibraryImagesResponse {
   items: LibraryItem[];
   cursor?: string;
@@ -104,7 +107,7 @@ export function normalizeImageGenItem(
   const conversationId = asString(raw.conversation_id);
   const url = asString(raw.url);
   const createdAt = asNumber(raw.created_at);
-  if (!id || !conversationId || !url || createdAt === undefined) {
+  if (!id || !conversationId || !url) {
     return null;
   }
   return {
@@ -136,7 +139,7 @@ export async function getRecentImageGenerations(
     { method: 'GET', headers: chatGptHeaders(token), credentials: 'include' },
     { signal },
   );
-  const data = (await response.json()) as { items?: unknown } | undefined;
+  const data = (await response.json()) as RecentImageGenResponse | undefined;
   const items = Array.isArray(data?.items) ? data.items : [];
   return items
     .map((item) => normalizeImageGenItem((item ?? {}) as RawImageGenItem))
@@ -377,6 +380,36 @@ export function getPromptFromImageNodeInConversation(
       }
     }
     currentId = asString(node?.parent);
+  }
+  return undefined;
+}
+export function getMessageCreateTimeFromConversation(
+  data: unknown,
+  messageId: string,
+  assetPointer: string,
+): number | undefined {
+  const mapping = asRecord(asRecord(data)?.mapping);
+  if (!mapping) {
+    return undefined;
+  }
+  for (const [key, value] of Object.entries(mapping)) {
+    const node = asRecord(value);
+    const message = asRecord(node?.message);
+    const id = asString(message?.id);
+    if (id === messageId) {
+      return asNumber(message?.create_time);
+    }
+    if (key === messageId) {
+      return asNumber(message?.create_time);
+    }
+    const content = asRecord(message?.content);
+    const parts = content?.parts;
+    if (
+      Array.isArray(parts) &&
+      parts.some((part) => asRecord(part)?.asset_pointer === assetPointer)
+    ) {
+      return asNumber(message?.create_time);
+    }
   }
   return undefined;
 }
