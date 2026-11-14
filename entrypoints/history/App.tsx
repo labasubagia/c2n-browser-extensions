@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
 import {
   openOptionsPage,
@@ -32,11 +33,7 @@ function formatDateTime(value: string | number | undefined): string {
   if (ms === undefined) {
     return '—';
   }
-  const date = new Date(ms);
-  const pad = (part: number): string => String(part).padStart(2, '0');
-  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(
-    date.getDate(),
-  )} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return format(new Date(ms), 'yyyy/MM/dd HH:mm');
 }
 
 function dayLabelFor(value: string | number | undefined): string {

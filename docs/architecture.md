@@ -25,7 +25,7 @@ chatgpt.com page
 
 ## Messaging Contract
 
-`lib/messages.ts` is the contract between UIs/content scripts and background. Discriminated-union `ExtensionMessage` (incl. `GET_LIMIT`, `GET_SYNCED_GENERATIONS`) + `ResponseMap`; typed `sendMessage<T>()`; background broadcasts `STATE_UPDATE` guarded by `isStateUpdate()`.
+`lib/messages.ts` is the contract between UIs/content scripts and background. Discriminated-union `ExtensionMessage` (incl. `GET_SYNCED_GENERATIONS`) + `ResponseMap`; typed `sendMessage<T>()`; background broadcasts `STATE_UPDATE` guarded by `isStateUpdate()`.
 **Any new message MUST be added to the `ExtensionMessage` union AND `ResponseMap`, and safely handled in the background `handleMessage` switch.**
 
 ## State Management
@@ -42,7 +42,7 @@ Module-level mutable singletons (`let state`) + listener callbacks (`setSyncStat
 - `lib/auth.ts` — session capture/validation; `saveObservedToken`, `getUsableAuthSession`, `clearAuthSession`; JWT decode for expiry/email; stored in `browser.storage.local` (survives extension updates; session storage would be cleared on update).
 - `lib/settings.ts` — `Settings`, `DEFAULT_SETTINGS`, `loadSettings`/`saveSettings`, `normalizeSettings`, `validateSettings`, `isNotionConfigured`.
 - `lib/retry.ts` — exponential backoff + jitter; `HttpError` (`status`,`url`,`body`,`retryAfterMs`); `isRetryable` (429/5xx/TypeError); abort-aware `sleep`; `fetchChecked`, `requestWithRetry`, `requestBlobWithRetry`.
-- `lib/util.ts` — pure helpers: `fileNameForGeneration`, `parseNotionDatabaseId`, `decodeJwtPayload`, `extractEmailFromJwt`, `errorMessage`, `isAbortError`, `safeUrl`, `truncate`, `timestampToIso`, `generationEstimate`, `contentTypeForFileName`.
+- `lib/util.ts` — pure helpers: `fileNameForGeneration`, `parseNotionDatabaseId`, `decodeJwtPayload`, `extractEmailFromJwt`, `errorMessage`, `isAbortError`, `safeUrl`, `truncate`, `timestampToIso`, `contentTypeForFileName`.
 - `lib/png.ts` — PNG chunk parse/write (crc-32); `injectPromptMetadata` writes 'Prompt' tEXt/iTXt chunk before IEND (idempotent); `getPngPrompt`.
 - `lib/types.ts` — all shared interfaces (Settings, AuthSession/Status, GenerationRecord, SyncState, LibraryState, RunError).
 - `lib/messages.ts` — `ExtensionMessage` union + `ResponseMap`; `openPage`/`openOptionsPage`.

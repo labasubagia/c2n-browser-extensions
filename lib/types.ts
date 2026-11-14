@@ -98,10 +98,6 @@ export interface SyncState {
   message: string;
   errors: RunError[];
 }
-export interface GenerationEstimate {
-  firstMs: number;
-  nextAllowedMs: number;
-}
 
 export interface SyncRunRecord {
   id: string;

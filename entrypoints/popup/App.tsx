@@ -1,7 +1,7 @@
+import { format, startOfDay, subDays } from 'date-fns';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import {
-  type GenerationLimitInfo,
   isStateUpdate,
   openOptionsPage,
   openPage,
@@ -13,6 +13,10 @@ import { loadSettings, saveSettings } from '@/lib/settings';
 import type { SyncState } from '@/lib/types';
 import { computeSyncProgress, errorMessage } from '@/lib/util';
 
+interface FirstGenTimes {
+  firstMs?: number;
+  todayFirstMs?: number;
+}
 function formatDateTime(value: number | undefined): string {
   if (!value) {
     return 'unknown';
@@ -24,20 +28,8 @@ function formatDateTime(value: number | undefined): string {
     minute: '2-digit',
   }).format(new Date(value));
 }
-function formatTime(value: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
-function isTodayMs(ms: number): boolean {
-  const now = new Date();
-  const date = new Date(ms);
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  );
+function formatDayTime(value: number): string {
+  return format(new Date(value), 'yyyy/MM/dd HH:mm');
 }
 
 function phaseLabel(sync: SyncState): string {
@@ -78,7 +70,9 @@ function errorStage(stage: string): string {
 
 export default function App() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
-  const [limit, setLimit] = useState<GenerationLimitInfo | null>(null);
+  const [firstGenTimes, setFirstGenTimes] = useState<FirstGenTimes | null>(
+    null,
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -171,18 +165,43 @@ export default function App() {
   }, [status, convsLoaded]);
   useEffect(() => {
     if (!status?.auth.present) {
-      setLimit(null);
+      setFirstGenTimes(null);
       return;
     }
     let cancelled = false;
-    sendMessage({ type: 'GET_LIMIT' }).then(
+    sendMessage({ type: 'GET_SYNCED_GENERATIONS', limit: 100 }).then(
       (result) => {
-        if (!cancelled) {
-          setLimit(result);
+        if (cancelled) return;
+        const stamps =
+          result.ok && result.items
+            ? result.items
+                .map((item) => item.createdAt)
+                .filter((t): t is string => typeof t === 'string')
+                .map((t) => new Date(t).getTime())
+                .filter((ms) => Number.isFinite(ms) && ms > 0)
+            : [];
+        const now = Date.now();
+        const todayStart = startOfDay(now).getTime();
+        const yesterdayStart = subDays(todayStart, 1).getTime();
+        const normalized = stamps.map((s) =>
+          s > 10_000_000_000 ? s : s * 1000,
+        );
+        const yesterday = normalized.filter(
+          (t) => t >= yesterdayStart && t < todayStart,
+        );
+        const today = normalized.filter((t) => t >= todayStart && t <= now);
+        const firstMs =
+          yesterday.length === 0 ? undefined : Math.min(...yesterday);
+        const todayFirstMs =
+          today.length === 0 ? undefined : Math.min(...today);
+        if (firstMs === undefined && todayFirstMs === undefined) {
+          setFirstGenTimes(null);
+          return;
         }
+        setFirstGenTimes({ firstMs, todayFirstMs });
       },
       () => {
-        // Background unavailable; leave the limit box hidden.
+        if (!cancelled) setFirstGenTimes(null);
       },
     );
     return () => {
@@ -253,14 +272,22 @@ export default function App() {
           v{status.version}
         </span>
       </div>
-      {limit?.ok &&
-        limit.estimate &&
-        isTodayMs(limit.estimate.nextAllowedMs) && (
-          <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-surface-muted text-muted border-edge">
-            Estimated start generating images: today at{' '}
-            {formatTime(limit.estimate.nextAllowedMs)}
-          </div>
-        )}
+      {firstGenTimes && (
+        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-surface-muted text-muted border-edge flex flex-col gap-0.5">
+          {firstGenTimes.firstMs !== undefined && (
+            <div>
+              1st generated image yesterday{' '}
+              {formatDayTime(firstGenTimes.firstMs)}
+            </div>
+          )}
+          {firstGenTimes.todayFirstMs !== undefined && (
+            <div>
+              1st generated image today{' '}
+              {formatDayTime(firstGenTimes.todayFirstMs)}
+            </div>
+          )}
+        </div>
+      )}
 
       {!authOk && (
         <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-warning-soft text-ink border-[color-mix(in_srgb,var(--warning)_30%,transparent)] flex flex-col gap-1.5">
