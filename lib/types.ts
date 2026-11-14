@@ -51,6 +51,7 @@ export interface GenerationRecord {
   uploadedAt?: string;
   lastError?: string;
   attempts: number;
+  lastSyncedAt?: string;
   lastAttemptAt?: string;
 }
 

@@ -148,6 +148,7 @@ export async function markGenerationUploaded(id: string): Promise<void> {
     ...record,
     status: 'uploaded',
     uploadedAt: new Date().toISOString(),
+    lastSyncedAt: new Date().toISOString(),
     lastError: undefined,
   });
 }

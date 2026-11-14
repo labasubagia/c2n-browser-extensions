@@ -290,17 +290,14 @@ async function run(
       if (!existing) {
         continue;
       }
-      const needUrl =
-        existing.status !== 'uploaded' && existing.url !== item.url;
-      const needCreated = !existing.createdAt && item.createdAt !== undefined;
-      if (!needUrl && !needCreated) {
-        continue;
-      }
-      const next = { ...existing };
-      if (needUrl) {
+      const next = {
+        ...existing,
+        lastSyncedAt: new Date().toISOString(),
+      };
+      if (existing.status !== 'uploaded' && existing.url !== item.url) {
         next.url = item.url;
       }
-      if (needCreated) {
+      if (!existing.createdAt && item.createdAt !== undefined) {
         next.createdAt = timestampToIso(item.createdAt ?? 0);
       }
       knownById.set(item.id, next);

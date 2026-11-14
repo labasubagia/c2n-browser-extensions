@@ -268,7 +268,9 @@ async function handleMessage(
             fileName: record.fileName,
             url: record.url,
             prompt: record.prompt,
+            createdAt: record.createdAt,
             uploadedAt: record.uploadedAt,
+            lastSyncedAt: record.lastSyncedAt,
           })),
         };
       } catch (error) {

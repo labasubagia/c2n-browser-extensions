@@ -41,6 +41,7 @@ export interface SyncedGenerationSummary {
   prompt: string;
   createdAt: string;
   uploadedAt?: string;
+  lastSyncedAt?: string;
 }
 
 export interface SyncedGenerationsResponse {

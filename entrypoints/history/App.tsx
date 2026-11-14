@@ -129,6 +129,9 @@ export default function App() {
                   <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
                     Uploaded
                   </th>
+                  <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
+                    Last sync
+                  </th>
                   <th className="px-2.5 py-2 font-semibold">Filename</th>
                   <th
                     className="px-2.5 py-2 font-semibold w-8"
@@ -150,6 +153,9 @@ export default function App() {
                     </td>
                     <td className="px-2.5 py-1.5 text-muted tabular-nums whitespace-nowrap">
                       {formatDateTime(item.uploadedAt)}
+                    </td>
+                    <td className="px-2.5 py-1.5 text-muted tabular-nums whitespace-nowrap">
+                      {formatDateTime(item.lastSyncedAt ?? item.uploadedAt)}
                     </td>
                     <td className="px-2.5 py-1.5 max-w-[280px] [overflow-wrap:anywhere]">
                       <a
