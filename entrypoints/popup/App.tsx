@@ -1,3 +1,4 @@
+import { format, startOfDay, subDays } from 'date-fns';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import {
@@ -9,13 +10,13 @@ import {
 } from '@/lib/messages';
 import { shouldRedirectToChatGPT } from '@/lib/popup-redirect';
 import { loadSettings, saveSettings } from '@/lib/settings';
-import type { GenerationEstimate, SyncState } from '@/lib/types';
-import {
-  computeSyncProgress,
-  errorMessage,
-  generationEstimate,
-} from '@/lib/util';
+import type { SyncState } from '@/lib/types';
+import { computeSyncProgress, errorMessage } from '@/lib/util';
 
+interface FirstGenTimes {
+  firstMs?: number;
+  todayFirstMs?: number;
+}
 function formatDateTime(value: number | undefined): string {
   if (!value) {
     return 'unknown';
@@ -27,12 +28,8 @@ function formatDateTime(value: number | undefined): string {
     minute: '2-digit',
   }).format(new Date(value));
 }
-function pad2(n: number): string {
-  return String(n).padStart(2, '0');
-}
 function formatDayTime(value: number): string {
-  const date = new Date(value);
-  return `${date.getFullYear()}/${pad2(date.getMonth() + 1)}/${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+  return format(new Date(value), 'yyyy/MM/dd HH:mm');
 }
 
 function phaseLabel(sync: SyncState): string {
@@ -73,7 +70,7 @@ function errorStage(stage: string): string {
 
 export default function App() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
-  const [estimate, setEstimate] = useState<GenerationEstimate | null>(null);
+  const [estimate, setEstimate] = useState<FirstGenTimes | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -181,7 +178,25 @@ export default function App() {
                 .map((t) => new Date(t).getTime())
                 .filter((ms) => Number.isFinite(ms) && ms > 0)
             : [];
-        setEstimate(generationEstimate(stamps) ?? null);
+        const now = Date.now();
+        const todayStart = startOfDay(now).getTime();
+        const yesterdayStart = subDays(todayStart, 1).getTime();
+        const normalized = stamps.map((s) =>
+          s > 10_000_000_000 ? s : s * 1000,
+        );
+        const yesterday = normalized.filter(
+          (t) => t >= yesterdayStart && t < todayStart,
+        );
+        const today = normalized.filter((t) => t >= todayStart && t <= now);
+        const firstMs =
+          yesterday.length === 0 ? undefined : Math.min(...yesterday);
+        const todayFirstMs =
+          today.length === 0 ? undefined : Math.min(...today);
+        if (firstMs === undefined && todayFirstMs === undefined) {
+          setEstimate(null);
+          return;
+        }
+        setEstimate({ firstMs, todayFirstMs });
       },
       () => {
         if (!cancelled) setEstimate(null);

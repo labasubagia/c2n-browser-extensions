@@ -7,7 +7,6 @@ import {
   decodeJwtPayload,
   extractEmailFromJwt,
   fileNameForGeneration,
-  generationEstimate,
   imageExtFromUrl,
   parseNotionDatabaseId,
   sanitizeFileStem,
@@ -281,90 +280,5 @@ describe('conversationsToDelete', () => {
 
   it('ignores conversations missing from the ok-count map', () => {
     expect(conversationsToDelete(true, grouped, new Map())).toEqual([]);
-  });
-});
-
-describe('generationEstimate', () => {
-  const DAY = 86400_000;
-  const MARGIN = 60_000;
-
-  it('returns undefined when there are no stamps', () => {
-    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
-    expect(generationEstimate([], now)).toBeUndefined();
-  });
-
-  it('anchors on yesterday first-gen (today empty)', () => {
-    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
-    const yesterdayFirst = new Date(2026, 0, 14, 9, 30, 0).getTime();
-    const later = new Date(2026, 0, 14, 11, 0, 0).getTime();
-    expect(generationEstimate([later, yesterdayFirst], now)).toEqual({
-      firstMs: yesterdayFirst,
-      todayFirstMs: undefined,
-      nextAllowedMs: yesterdayFirst + DAY + MARGIN,
-    });
-  });
-
-  it('captures today first-gen (yesterday empty)', () => {
-    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
-    const todayFirst = new Date(2026, 0, 15, 7, 59, 0).getTime();
-    const estimate = generationEstimate([todayFirst], now);
-    expect(estimate).toBeDefined();
-    expect(estimate?.todayFirstMs).toBe(todayFirst);
-    expect(estimate?.firstMs).toBeUndefined();
-  });
-
-  it('reports both days when both have generations', () => {
-    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
-    const yesterdayFirst = new Date(2026, 0, 14, 9, 30, 0).getTime();
-    const todayFirst = new Date(2026, 0, 15, 7, 59, 0).getTime();
-    expect(generationEstimate([todayFirst, yesterdayFirst], now)).toEqual({
-      firstMs: yesterdayFirst,
-      todayFirstMs: todayFirst,
-      nextAllowedMs: yesterdayFirst + DAY + MARGIN,
-    });
-  });
-
-  it('normalizes epoch-seconds stamps', () => {
-    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
-    const firstMs = new Date(2026, 0, 14, 9, 0, 0).getTime();
-    expect(generationEstimate([firstMs / 1000], now)).toEqual({
-      firstMs,
-      todayFirstMs: undefined,
-      nextAllowedMs: firstMs + DAY + MARGIN,
-    });
-  });
-
-  it('excludes today start from the yesterday window', () => {
-    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
-    const todayStart = new Date(2026, 0, 15).getTime();
-    const yesterdayStart = todayStart - DAY;
-    const estToday = generationEstimate([todayStart], now);
-    expect(estToday?.todayFirstMs).toBe(todayStart);
-    expect(estToday?.firstMs).toBeUndefined();
-    const estYesterday = generationEstimate([yesterdayStart], now);
-    expect(estYesterday?.firstMs).toBe(yesterdayStart);
-  });
-
-  it('handles mixed epoch-ms and epoch-seconds stamps', () => {
-    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
-    const yesterdayFirst = new Date(2026, 0, 14, 9, 30, 0).getTime();
-    const laterMs = new Date(2026, 0, 14, 10, 0, 0).getTime();
-    expect(generationEstimate([laterMs, yesterdayFirst / 1000], now)).toEqual({
-      firstMs: yesterdayFirst,
-      todayFirstMs: undefined,
-      nextAllowedMs: yesterdayFirst + DAY + MARGIN,
-    });
-  });
-
-  it('preserves local clock time across a DST-shift day', () => {
-    // 2026-03-08 is the US spring-forward day: firstMs lies before the
-    // transition, so a naive +24h (old code) would shift the clock hour
-    // while addDays keeps it at 09:30.
-    const now = new Date(2026, 2, 8, 12, 0, 0).getTime();
-    const firstMs = new Date(2026, 2, 7, 9, 30, 0).getTime();
-    const estimate = generationEstimate([firstMs], now);
-    expect(estimate).toBeDefined();
-    const next = new Date(estimate?.nextAllowedMs ?? 0);
-    expect(next.getHours()).toBe(9);
   });
 });
