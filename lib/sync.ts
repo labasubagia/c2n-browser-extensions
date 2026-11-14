@@ -290,19 +290,23 @@ async function run(
       if (!existing) {
         continue;
       }
-      const next = {
-        ...existing,
-        lastSyncedAt: new Date().toISOString(),
-      };
+      const next = { ...existing };
+      let changed = false;
       if (existing.status !== 'uploaded' && existing.url !== item.url) {
         next.url = item.url;
+        changed = true;
       }
       if (item.createdAt !== undefined) {
         const iso = timestampToIso(item.createdAt);
         if (next.createdAt !== iso) {
           next.createdAt = iso;
+          changed = true;
         }
       }
+      if (!changed) {
+        continue;
+      }
+      next.lastSyncedAt = new Date().toISOString();
       knownById.set(item.id, next);
       refreshed.push(next);
     }
@@ -351,15 +355,16 @@ async function run(
           assetPointer: item.assetPointer,
           url: item.url,
           prompt,
-          createdAt: timestampToIso(
-            item.createdAt ??
+          createdAt: (() => {
+            const stamp =
+              item.createdAt ??
               getMessageCreateTimeFromConversation(
                 details,
                 item.messageId,
                 item.assetPointer,
-              ) ??
-              Date.now(),
-          ),
+              );
+            return stamp === undefined ? undefined : timestampToIso(stamp);
+          })(),
           fileName: fileNameForGeneration(item.id, item.url),
           status: 'pending',
           attempts: 0,
@@ -388,7 +393,7 @@ async function run(
           const rightRecent = recentIds.has(right.id) ? 0 : 1;
           return (
             leftRecent - rightRecent ||
-            left.createdAt.localeCompare(right.createdAt)
+            (left.createdAt ?? '').localeCompare(right.createdAt ?? '')
           );
         });
     const selected = candidates.slice(0, settings.sync.limit);

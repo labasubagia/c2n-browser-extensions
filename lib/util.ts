@@ -1,4 +1,4 @@
-import { startOfDay, subDays } from 'date-fns';
+import { addDays, startOfDay, subDays } from 'date-fns';
 import type { GenerationEstimate, SyncState } from './types';
 
 const IMAGE_EXTENSIONS = new Set([
@@ -68,7 +68,6 @@ export function timestampToIso(value: number): string {
     ? new Date().toISOString()
     : date.toISOString();
 }
-const DAY_MS = 24 * 3600_000;
 const LIMIT_MARGIN_MS = 60_000;
 
 export function generationEstimate(
@@ -84,7 +83,11 @@ export function generationEstimate(
     return undefined;
   }
   const firstMs = Math.min(...yesterday);
-  return { firstMs, nextAllowedMs: firstMs + DAY_MS + LIMIT_MARGIN_MS };
+  return {
+    firstMs,
+    // Calendar day (not fixed 24h) so the local clock time survives DST.
+    nextAllowedMs: addDays(firstMs, 1).getTime() + LIMIT_MARGIN_MS,
+  };
 }
 
 /**

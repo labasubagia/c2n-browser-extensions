@@ -243,9 +243,14 @@ async function handleMessage(
         };
       }
       try {
+        // ponytail: fetch up to 100 newest image_gen items; the image_gen API
+        // exposes no cursor/offset, so an extreme day (>100 yesterday gens)
+        // could push the true first-of-yesterday out of range — the estimate
+        // then anchors later (more conservative), never earlier. Add cursor
+        // paging if that ever matters.
         const items = await getRecentImageGenerations(
           session.token,
-          50,
+          100,
           AbortSignal.timeout(15_000),
         );
         const estimate = generationEstimate(

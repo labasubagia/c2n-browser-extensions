@@ -317,4 +317,35 @@ describe('generationEstimate', () => {
       nextAllowedMs: firstMs + DAY + MARGIN,
     });
   });
+
+  it('includes stamps exactly at yesterday start, excludes today start', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const todayStart = new Date(2026, 0, 15).getTime();
+    const yesterdayStart = todayStart - DAY;
+    expect(generationEstimate([todayStart], now)).toBeUndefined();
+    expect(generationEstimate([yesterdayStart], now)?.firstMs).toBe(
+      yesterdayStart,
+    );
+  });
+
+  it('handles mixed epoch-ms and epoch-seconds stamps in one call', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const yesterdayFirst = new Date(2026, 0, 14, 9, 30, 0).getTime();
+    const laterMs = new Date(2026, 0, 14, 10, 0, 0).getTime();
+    expect(generationEstimate([laterMs, yesterdayFirst / 1000], now)).toEqual({
+      firstMs: yesterdayFirst,
+      nextAllowedMs: yesterdayFirst + DAY + MARGIN,
+    });
+  });
+
+  it('preserves local clock time across a DST-shift day', () => {
+    const now = new Date(2026, 2, 9, 12, 0, 0).getTime();
+    const firstMs = new Date(2026, 2, 8, 9, 30, 0).getTime();
+    const estimate = generationEstimate([firstMs], now);
+    expect(estimate).toBeDefined();
+    const next = estimate?.nextAllowedMs ?? 0;
+    expect(new Date(next).getHours()).toBe(new Date(firstMs).getHours());
+    // Same wall-clock time plus the 1-minute margin, regardless of DST.
+    expect((((next - firstMs) % DAY) + DAY) % DAY).toBe(MARGIN);
+  });
 });

@@ -108,7 +108,7 @@ export async function getUploadedGenerations(
     'by-status',
     'uploaded',
   );
-  records.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  records.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
   return records.slice(0, limit);
 }
 
@@ -123,7 +123,9 @@ export async function getPendingGenerations(
   );
   const failed = await db.getAllFromIndex('generations', 'by-status', 'failed');
   return [...pending, ...failed]
-    .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+    .sort((left, right) =>
+      (left.createdAt ?? '').localeCompare(right.createdAt ?? ''),
+    )
     .slice(0, limit);
 }
 

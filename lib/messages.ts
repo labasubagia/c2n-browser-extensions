@@ -39,7 +39,7 @@ export interface SyncedGenerationSummary {
   fileName: string;
   url: string;
   prompt: string;
-  createdAt: string;
+  createdAt?: string;
   uploadedAt?: string;
   lastSyncedAt?: string;
 }

@@ -45,7 +45,7 @@ export interface GenerationRecord {
   assetPointer: string;
   url: string;
   prompt: string;
-  createdAt: string;
+  createdAt?: string;
   fileName: string;
   status: GenerationStatus;
   uploadedAt?: string;

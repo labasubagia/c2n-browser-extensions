@@ -30,6 +30,15 @@ function formatTime(value: number): string {
     minute: '2-digit',
   }).format(new Date(value));
 }
+function isTodayMs(ms: number): boolean {
+  const now = new Date();
+  const date = new Date(ms);
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
 
 function phaseLabel(sync: SyncState): string {
   switch (sync.phase) {
@@ -239,12 +248,14 @@ export default function App() {
           v{status.version}
         </span>
       </div>
-      {limit?.ok && limit.estimate && (
-        <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-surface-muted text-muted border-edge">
-          Estimated start generating images: today at{' '}
-          {formatTime(limit.estimate.nextAllowedMs)}
-        </div>
-      )}
+      {limit?.ok &&
+        limit.estimate &&
+        isTodayMs(limit.estimate.nextAllowedMs) && (
+          <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-surface-muted text-muted border-edge">
+            Estimated start generating images: today at{' '}
+            {formatTime(limit.estimate.nextAllowedMs)}
+          </div>
+        )}
 
       {!authOk && (
         <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-warning-soft text-ink border-[color-mix(in_srgb,var(--warning)_30%,transparent)] flex flex-col gap-1.5">
