@@ -45,12 +45,13 @@ export interface GenerationRecord {
   assetPointer: string;
   url: string;
   prompt: string;
-  createdAt: string;
+  createdAt?: string;
   fileName: string;
   status: GenerationStatus;
   uploadedAt?: string;
   lastError?: string;
   attempts: number;
+  lastSyncedAt?: string;
   lastAttemptAt?: string;
 }
 
@@ -96,6 +97,10 @@ export interface SyncState {
   deletedTotal: number;
   message: string;
   errors: RunError[];
+}
+export interface GenerationEstimate {
+  firstMs: number;
+  nextAllowedMs: number;
 }
 
 export interface SyncRunRecord {

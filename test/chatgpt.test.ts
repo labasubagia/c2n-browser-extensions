@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   getConversationMappingKeyByAssetPointer,
+  getMessageCreateTimeFromConversation,
   getPromptFromImageNodeInConversation,
   isAllowedImageUrl,
   normalizeImageGenItem,
@@ -87,13 +88,32 @@ describe('recent image generation normalization', () => {
       createdAt: 1_700_000_000,
     });
   });
+  it('accepts an item with a missing created_at (fallback later)', () => {
+    expect(
+      normalizeImageGenItem({
+        id: 'gen-2',
+        conversation_id: 'conv-1',
+        url: 'https://example.test/b.png',
+      }),
+    ).toEqual({
+      id: 'gen-2',
+      messageId: '',
+      assetPointer: '',
+      conversationId: 'conv-1',
+      url: 'https://example.test/b.png',
+      createdAt: undefined,
+    });
+  });
 
   it('rejects items without required fields', () => {
     expect(
       normalizeImageGenItem({ id: 'gen-1', url: 'https://example.test/a.png' }),
     ).toBeNull();
     expect(
-      normalizeImageGenItem({ id: 'gen-1', conversation_id: 'c', url: 'u' }),
+      normalizeImageGenItem({ conversation_id: 'c', url: 'u' }),
+    ).toBeNull();
+    expect(
+      normalizeImageGenItem({ id: 'gen-1', conversation_id: 'c' }),
     ).toBeNull();
   });
 });
@@ -138,5 +158,58 @@ describe('download image URL guard', () => {
     expect(isAllowedImageUrl('https://127.0.0.1/a.png')).toBe(false);
     expect(isAllowedImageUrl('https://evil.com/a.png')).toBe(false);
     expect(isAllowedImageUrl('not a url')).toBe(false);
+  });
+});
+
+describe('getMessageCreateTimeFromConversation', () => {
+  const mapping = {
+    nodeA: {
+      id: 'nodeA',
+      message: {
+        id: 'nodeA',
+        create_time: 1000,
+        content: { parts: [] },
+      },
+    },
+    nodeB: {
+      id: 'nodeB',
+      message: {
+        id: 'nodeB',
+        create_time: 2000,
+        content: { parts: [{ asset_pointer: 'file-service://x' }] },
+      },
+    },
+  };
+
+  it('matches by message id', () => {
+    expect(
+      getMessageCreateTimeFromConversation({ mapping }, 'nodeA', 'none'),
+    ).toBe(1000);
+  });
+
+  it('matches by asset pointer in content parts', () => {
+    expect(
+      getMessageCreateTimeFromConversation(
+        { mapping },
+        'none',
+        'file-service://x',
+      ),
+    ).toBe(2000);
+  });
+
+  it('returns undefined when no node matches', () => {
+    expect(
+      getMessageCreateTimeFromConversation({ mapping }, 'none', 'none'),
+    ).toBeUndefined();
+  });
+
+  it('handles a missing message node', () => {
+    expect(
+      getMessageCreateTimeFromConversation(
+        { mapping: { zed: { message: undefined } } },
+        'zed',
+        'none',
+      ),
+    ).toBeUndefined();
   });
 });

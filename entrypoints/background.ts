@@ -3,10 +3,11 @@ import { defineBackground } from 'wxt/utils/define-background';
 import {
   clearAuthSession,
   getAuthStatus,
+  getUsableAuthSession,
   saveObservedToken,
   setAuthEmail,
 } from '@/lib/auth';
-import { getMe } from '@/lib/chatgpt';
+import { getMe, getRecentImageGenerations } from '@/lib/chatgpt';
 import {
   cancelLibraryOperation,
   clearLibraryScan,
@@ -29,7 +30,11 @@ import {
   loadSettings,
   validateSettings,
 } from '@/lib/settings';
-import { getPendingCount, getRecentRuns } from '@/lib/storage';
+import {
+  getPendingCount,
+  getRecentRuns,
+  getUploadedGenerations,
+} from '@/lib/storage';
 import {
   cancelSync,
   getSyncState,
@@ -38,7 +43,7 @@ import {
   startSync,
 } from '@/lib/sync';
 import type { LibraryState, SyncState } from '@/lib/types';
-import { errorMessage } from '@/lib/util';
+import { errorMessage, generationEstimate } from '@/lib/util';
 
 let keepAliveTimer: ReturnType<typeof setInterval> | null = null;
 let emailLookupToken: string | null = null;
@@ -228,6 +233,55 @@ async function handleMessage(
       await clearAuthSession();
       emailLookupToken = null;
       return { ok: true };
+    case 'GET_LIMIT': {
+      const session = await getUsableAuthSession();
+      if (!session) {
+        return {
+          ok: false,
+          error: 'No active ChatGPT session.',
+          at: Date.now(),
+        };
+      }
+      try {
+        // ponytail: fetch up to 100 newest image_gen items; the image_gen API
+        // exposes no cursor/offset, so an extreme day (>100 yesterday gens)
+        // could push the true first-of-yesterday out of range — the estimate
+        // then anchors later (more conservative), never earlier. Add cursor
+        // paging if that ever matters.
+        const items = await getRecentImageGenerations(
+          session.token,
+          100,
+          AbortSignal.timeout(15_000),
+        );
+        const estimate = generationEstimate(
+          items.flatMap((item) =>
+            item.createdAt === undefined ? [] : [item.createdAt],
+          ),
+        );
+        return { ok: true, estimate, at: Date.now() };
+      } catch (error) {
+        return { ok: false, error: errorMessage(error), at: Date.now() };
+      }
+    }
+    case 'GET_SYNCED_GENERATIONS': {
+      try {
+        const records = await getUploadedGenerations(message.limit ?? 100);
+        return {
+          ok: true,
+          items: records.map((record) => ({
+            id: record.id,
+            fileName: record.fileName,
+            url: record.url,
+            prompt: record.prompt,
+            createdAt: record.createdAt,
+            uploadedAt: record.uploadedAt,
+            lastSyncedAt: record.lastSyncedAt,
+          })),
+        };
+      } catch (error) {
+        return { ok: false, items: [], error: errorMessage(error) };
+      }
+    }
 
     default:
       return { ok: false, error: 'Unknown message type.' };

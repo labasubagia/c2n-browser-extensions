@@ -98,7 +98,7 @@ export default defineContentScript({
           token,
           userAgent: navigator.userAgent,
         },
-        location.origin,
+        '*',
       );
     };
 
@@ -203,7 +203,7 @@ export default defineContentScript({
             token: latestToken,
             userAgent: navigator.userAgent,
           },
-          location.origin,
+          '*',
         );
       }
     });

@@ -7,6 +7,7 @@ import {
   decodeJwtPayload,
   extractEmailFromJwt,
   fileNameForGeneration,
+  generationEstimate,
   imageExtFromUrl,
   parseNotionDatabaseId,
   sanitizeFileStem,
@@ -280,5 +281,72 @@ describe('conversationsToDelete', () => {
 
   it('ignores conversations missing from the ok-count map', () => {
     expect(conversationsToDelete(true, grouped, new Map())).toEqual([]);
+  });
+});
+
+describe('generationEstimate', () => {
+  const DAY = 86400_000;
+  const MARGIN = 60_000;
+
+  it('returns undefined when there are no stamps', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    expect(generationEstimate([], now)).toBeUndefined();
+  });
+
+  it('returns undefined when only today has generations (yesterday empty)', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const todayFirst = new Date(2026, 0, 15, 9, 30, 0).getTime();
+    expect(generationEstimate([todayFirst], now)).toBeUndefined();
+  });
+
+  it('anchors on yesterday first-gen and adds 24h + 1min', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const yesterdayFirst = new Date(2026, 0, 14, 9, 30, 0).getTime();
+    const later = new Date(2026, 0, 14, 11, 0, 0).getTime();
+    expect(generationEstimate([later, yesterdayFirst], now)).toEqual({
+      firstMs: yesterdayFirst,
+      nextAllowedMs: yesterdayFirst + DAY + MARGIN,
+    });
+  });
+
+  it('normalizes epoch-seconds stamps', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const firstMs = new Date(2026, 0, 14, 9, 0, 0).getTime();
+    expect(generationEstimate([firstMs / 1000], now)).toEqual({
+      firstMs,
+      nextAllowedMs: firstMs + DAY + MARGIN,
+    });
+  });
+
+  it('includes stamps exactly at yesterday start, excludes today start', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const todayStart = new Date(2026, 0, 15).getTime();
+    const yesterdayStart = todayStart - DAY;
+    expect(generationEstimate([todayStart], now)).toBeUndefined();
+    expect(generationEstimate([yesterdayStart], now)?.firstMs).toBe(
+      yesterdayStart,
+    );
+  });
+
+  it('handles mixed epoch-ms and epoch-seconds stamps in one call', () => {
+    const now = new Date(2026, 0, 15, 14, 0, 0).getTime();
+    const yesterdayFirst = new Date(2026, 0, 14, 9, 30, 0).getTime();
+    const laterMs = new Date(2026, 0, 14, 10, 0, 0).getTime();
+    expect(generationEstimate([laterMs, yesterdayFirst / 1000], now)).toEqual({
+      firstMs: yesterdayFirst,
+      nextAllowedMs: yesterdayFirst + DAY + MARGIN,
+    });
+  });
+
+  it('preserves local clock time across a DST-shift day', () => {
+    // 2026-03-08 is the US spring-forward day: firstMs lies before the
+    // transition, so a naive +24h (old code) would shift the clock hour
+    // while addDays keeps it at 09:30.
+    const now = new Date(2026, 2, 8, 12, 0, 0).getTime();
+    const firstMs = new Date(2026, 2, 7, 9, 30, 0).getTime();
+    const estimate = generationEstimate([firstMs], now);
+    expect(estimate).toBeDefined();
+    const next = new Date(estimate?.nextAllowedMs ?? 0);
+    expect(next.getHours()).toBe(9);
   });
 });

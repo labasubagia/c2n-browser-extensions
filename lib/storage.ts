@@ -100,6 +100,17 @@ export async function getGenerationsByIds(
 export async function getAllGenerations(): Promise<GenerationRecord[]> {
   return (await database()).getAll('generations');
 }
+export async function getUploadedGenerations(
+  limit = 100,
+): Promise<GenerationRecord[]> {
+  const records = await (await database()).getAllFromIndex(
+    'generations',
+    'by-status',
+    'uploaded',
+  );
+  records.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+  return records.slice(0, limit);
+}
 
 export async function getPendingGenerations(
   limit: number,
@@ -112,7 +123,9 @@ export async function getPendingGenerations(
   );
   const failed = await db.getAllFromIndex('generations', 'by-status', 'failed');
   return [...pending, ...failed]
-    .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+    .sort((left, right) =>
+      (left.createdAt ?? '').localeCompare(right.createdAt ?? ''),
+    )
     .slice(0, limit);
 }
 
@@ -137,6 +150,7 @@ export async function markGenerationUploaded(id: string): Promise<void> {
     ...record,
     status: 'uploaded',
     uploadedAt: new Date().toISOString(),
+    lastSyncedAt: new Date().toISOString(),
     lastError: undefined,
   });
 }

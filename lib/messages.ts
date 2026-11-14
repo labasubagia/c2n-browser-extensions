@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import type {
   AuthStatus,
+  GenerationEstimate,
   LibraryItem,
   LibraryState,
   NotionTestResult,
@@ -27,10 +28,33 @@ export interface ScanResponse {
   total: number;
   error?: string;
 }
+export interface GenerationLimitInfo {
+  ok: boolean;
+  error?: string;
+  estimate?: GenerationEstimate;
+  at: number;
+}
+export interface SyncedGenerationSummary {
+  id: string;
+  fileName: string;
+  url: string;
+  prompt: string;
+  createdAt?: string;
+  uploadedAt?: string;
+  lastSyncedAt?: string;
+}
+
+export interface SyncedGenerationsResponse {
+  ok: boolean;
+  items: SyncedGenerationSummary[];
+  error?: string;
+}
 
 export type ExtensionMessage =
   | { type: 'AUTH_TOKEN_OBSERVED'; token: string; userAgent?: string }
   | { type: 'GET_STATUS' }
+  | { type: 'GET_LIMIT' }
+  | { type: 'GET_SYNCED_GENERATIONS'; limit: number }
   | { type: 'START_SYNC'; resume?: boolean }
   | { type: 'CANCEL_SYNC' }
   | { type: 'TEST_NOTION' }
@@ -43,6 +67,8 @@ export type ExtensionMessage =
 
 export interface ResponseMap {
   GET_STATUS: RuntimeStatus;
+  GET_LIMIT: GenerationLimitInfo;
+  GET_SYNCED_GENERATIONS: SyncedGenerationsResponse;
   START_SYNC: { ok: boolean; error?: string };
   CANCEL_SYNC: { ok: boolean };
   TEST_NOTION: NotionTestResult;
@@ -70,7 +96,9 @@ export function isStateUpdate(
   );
 }
 
-export function openPage(path: 'options.html' | 'library.html'): void {
+export function openPage(
+  path: 'options.html' | 'library.html' | 'history.html',
+): void {
   void browser.tabs.create({ url: browser.runtime.getURL(`/${path}`) });
 }
 

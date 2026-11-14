@@ -1,4 +1,5 @@
-import type { SyncState } from './types';
+import { addDays, startOfDay, subDays } from 'date-fns';
+import type { GenerationEstimate, SyncState } from './types';
 
 const IMAGE_EXTENSIONS = new Set([
   '.png',
@@ -66,6 +67,27 @@ export function timestampToIso(value: number): string {
   return Number.isNaN(date.getTime())
     ? new Date().toISOString()
     : date.toISOString();
+}
+const LIMIT_MARGIN_MS = 60_000;
+
+export function generationEstimate(
+  stamps: readonly number[],
+  now = Date.now(),
+): GenerationEstimate | undefined {
+  const todayStart = startOfDay(now).getTime();
+  const yesterdayStart = subDays(todayStart, 1).getTime();
+  const yesterday = stamps
+    .map((s) => (s > 10_000_000_000 ? s : s * 1000))
+    .filter((t) => t >= yesterdayStart && t < todayStart);
+  if (yesterday.length === 0) {
+    return undefined;
+  }
+  const firstMs = Math.min(...yesterday);
+  return {
+    firstMs,
+    // Calendar day (not fixed 24h) so the local clock time survives DST.
+    nextAllowedMs: addDays(firstMs, 1).getTime() + LIMIT_MARGIN_MS,
+  };
 }
 
 /**
