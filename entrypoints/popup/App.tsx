@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import {
-  type GenerationLimitInfo,
   isStateUpdate,
   openOptionsPage,
   openPage,
@@ -10,8 +9,12 @@ import {
 } from '@/lib/messages';
 import { shouldRedirectToChatGPT } from '@/lib/popup-redirect';
 import { loadSettings, saveSettings } from '@/lib/settings';
-import type { SyncState } from '@/lib/types';
-import { computeSyncProgress, errorMessage } from '@/lib/util';
+import type { GenerationEstimate, SyncState } from '@/lib/types';
+import {
+  computeSyncProgress,
+  errorMessage,
+  generationEstimate,
+} from '@/lib/util';
 
 function formatDateTime(value: number | undefined): string {
   if (!value) {
@@ -70,7 +73,7 @@ function errorStage(stage: string): string {
 
 export default function App() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
-  const [limit, setLimit] = useState<GenerationLimitInfo | null>(null);
+  const [estimate, setEstimate] = useState<GenerationEstimate | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -163,18 +166,25 @@ export default function App() {
   }, [status, convsLoaded]);
   useEffect(() => {
     if (!status?.auth.present) {
-      setLimit(null);
+      setEstimate(null);
       return;
     }
     let cancelled = false;
-    sendMessage({ type: 'GET_LIMIT' }).then(
+    sendMessage({ type: 'GET_SYNCED_GENERATIONS', limit: 100 }).then(
       (result) => {
-        if (!cancelled) {
-          setLimit(result);
-        }
+        if (cancelled) return;
+        const stamps =
+          result.ok && result.items
+            ? result.items
+                .map((item) => item.createdAt)
+                .filter((t): t is string => typeof t === 'string')
+                .map((t) => new Date(t).getTime())
+                .filter((ms) => Number.isFinite(ms) && ms > 0)
+            : [];
+        setEstimate(generationEstimate(stamps) ?? null);
       },
       () => {
-        // Background unavailable; leave the limit box hidden.
+        if (!cancelled) setEstimate(null);
       },
     );
     return () => {
@@ -245,18 +255,16 @@ export default function App() {
           v{status.version}
         </span>
       </div>
-      {limit?.ok && limit.estimate && (
+      {estimate && (
         <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-surface-muted text-muted border-edge flex flex-col gap-0.5">
-          {limit.estimate.firstMs !== undefined && (
+          {estimate.firstMs !== undefined && (
             <div>
-              1st generated image yesterday{' '}
-              {formatDayTime(limit.estimate.firstMs)}
+              1st generated image yesterday {formatDayTime(estimate.firstMs)}
             </div>
           )}
-          {limit.estimate.todayFirstMs !== undefined && (
+          {estimate.todayFirstMs !== undefined && (
             <div>
-              1st generated image today{' '}
-              {formatDayTime(limit.estimate.todayFirstMs)}
+              1st generated image today {formatDayTime(estimate.todayFirstMs)}
             </div>
           )}
         </div>
