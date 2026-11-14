@@ -297,8 +297,11 @@ async function run(
       if (existing.status !== 'uploaded' && existing.url !== item.url) {
         next.url = item.url;
       }
-      if (!existing.createdAt && item.createdAt !== undefined) {
-        next.createdAt = timestampToIso(item.createdAt ?? 0);
+      if (item.createdAt !== undefined) {
+        const iso = timestampToIso(item.createdAt);
+        if (next.createdAt !== iso) {
+          next.createdAt = iso;
+        }
       }
       knownById.set(item.id, next);
       refreshed.push(next);
