@@ -60,6 +60,16 @@ describe('generation storage', () => {
     expect(await getPendingCount()).toBe(2);
   });
 
+  it('includes pending rows with missing createdAt without breaking sort', async () => {
+    const bare = record('bare', 'pending', '2026-01-01T00:00:00.000Z');
+    delete bare.createdAt;
+    await putGeneration(bare);
+    await putGeneration(record('later', 'pending', '2026-01-02T00:00:00.000Z'));
+
+    const ids = (await getPendingGenerations(10)).map((item) => item.id);
+    expect(ids.sort()).toEqual(['bare', 'later']);
+  });
+
   it('marks uploads and failures', async () => {
     await putGeneration(record('gen-1', 'pending', '2026-01-01T00:00:00.000Z'));
     await markGenerationFailed('gen-1', 'upload failed');

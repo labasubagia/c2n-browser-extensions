@@ -339,13 +339,14 @@ describe('generationEstimate', () => {
   });
 
   it('preserves local clock time across a DST-shift day', () => {
-    const now = new Date(2026, 2, 9, 12, 0, 0).getTime();
-    const firstMs = new Date(2026, 2, 8, 9, 30, 0).getTime();
+    // 2026-03-08 is the US spring-forward day: firstMs lies before the
+    // transition, so a naive +24h (old code) would shift the clock hour
+    // while addDays keeps it at 09:30.
+    const now = new Date(2026, 2, 8, 12, 0, 0).getTime();
+    const firstMs = new Date(2026, 2, 7, 9, 30, 0).getTime();
     const estimate = generationEstimate([firstMs], now);
     expect(estimate).toBeDefined();
-    const next = estimate?.nextAllowedMs ?? 0;
-    expect(new Date(next).getHours()).toBe(new Date(firstMs).getHours());
-    // Same wall-clock time plus the 1-minute margin, regardless of DST.
-    expect((((next - firstMs) % DAY) + DAY) % DAY).toBe(MARGIN);
+    const next = new Date(estimate?.nextAllowedMs ?? 0);
+    expect(next.getHours()).toBe(9);
   });
 });

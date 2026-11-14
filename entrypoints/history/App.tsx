@@ -174,25 +174,40 @@ export default function App() {
             <table className="w-full text-xs border-collapse">
               <thead className="sticky top-0 z-10 bg-surface-muted">
                 <tr className="text-left text-muted uppercase tracking-[0.06em] text-[10.5px]">
-                  <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
+                  <th
+                    className="px-2.5 py-2 font-semibold whitespace-nowrap"
+                    scope="col"
+                  >
                     Created
                   </th>
                   {showUploaded && (
-                    <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
+                    <th
+                      className="px-2.5 py-2 font-semibold whitespace-nowrap"
+                      scope="col"
+                    >
                       Uploaded
                     </th>
                   )}
                   {showLastSync && (
-                    <th className="px-2.5 py-2 font-semibold whitespace-nowrap">
+                    <th
+                      className="px-2.5 py-2 font-semibold whitespace-nowrap"
+                      scope="col"
+                    >
                       Last sync
                     </th>
                   )}
-                  <th className="px-2.5 py-2 font-semibold">Filename</th>
+                  <th className="px-2.5 py-2 font-semibold" scope="col">
+                    Filename
+                  </th>
                   <th
                     className="px-2.5 py-2 font-semibold w-8"
+                    scope="col"
                     aria-label="Copy prompt"
                   />
-                  <th className="px-2.5 py-2 font-semibold text-right whitespace-nowrap">
+                  <th
+                    className="px-2.5 py-2 font-semibold text-right whitespace-nowrap"
+                    scope="col"
+                  >
                     URL
                   </th>
                 </tr>
@@ -202,6 +217,7 @@ export default function App() {
                   <tr className="bg-surface-muted">
                     <th
                       colSpan={colSpan}
+                      scope="colgroup"
                       className="px-2.5 py-1.5 text-left text-[10.5px] uppercase tracking-[0.08em] text-muted font-semibold border-t border-edge"
                     >
                       {group.label} · {group.items.length} image
@@ -243,15 +259,21 @@ export default function App() {
                           className="appearance-none inline-flex items-center gap-1 text-muted hover:text-ink cursor-pointer transition-colors duration-150"
                           title="copy prompt"
                           onClick={() => {
-                            void navigator.clipboard.writeText(item.prompt);
-                            setCopiedId(item.id);
-                            window.setTimeout(
-                              () =>
-                                setCopiedId((current) =>
-                                  current === item.id ? null : current,
-                                ),
-                              1500,
-                            );
+                            void navigator.clipboard
+                              .writeText(item.prompt)
+                              .then(
+                                () => {
+                                  setCopiedId(item.id);
+                                  window.setTimeout(
+                                    () =>
+                                      setCopiedId((current) =>
+                                        current === item.id ? null : current,
+                                      ),
+                                    1500,
+                                  );
+                                },
+                                () => {},
+                              );
                           }}
                         >
                           {copiedId === item.id ? (
