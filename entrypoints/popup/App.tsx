@@ -70,7 +70,9 @@ function errorStage(stage: string): string {
 
 export default function App() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
-  const [estimate, setEstimate] = useState<FirstGenTimes | null>(null);
+  const [firstGenTimes, setFirstGenTimes] = useState<FirstGenTimes | null>(
+    null,
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -163,7 +165,7 @@ export default function App() {
   }, [status, convsLoaded]);
   useEffect(() => {
     if (!status?.auth.present) {
-      setEstimate(null);
+      setFirstGenTimes(null);
       return;
     }
     let cancelled = false;
@@ -193,13 +195,13 @@ export default function App() {
         const todayFirstMs =
           today.length === 0 ? undefined : Math.min(...today);
         if (firstMs === undefined && todayFirstMs === undefined) {
-          setEstimate(null);
+          setFirstGenTimes(null);
           return;
         }
-        setEstimate({ firstMs, todayFirstMs });
+        setFirstGenTimes({ firstMs, todayFirstMs });
       },
       () => {
-        if (!cancelled) setEstimate(null);
+        if (!cancelled) setFirstGenTimes(null);
       },
     );
     return () => {
@@ -270,16 +272,18 @@ export default function App() {
           v{status.version}
         </span>
       </div>
-      {estimate && (
+      {firstGenTimes && (
         <div className="p-2.5 px-3 rounded-[10px] text-[12.5px] border bg-surface-muted text-muted border-edge flex flex-col gap-0.5">
-          {estimate.firstMs !== undefined && (
+          {firstGenTimes.firstMs !== undefined && (
             <div>
-              1st generated image yesterday {formatDayTime(estimate.firstMs)}
+              1st generated image yesterday{' '}
+              {formatDayTime(firstGenTimes.firstMs)}
             </div>
           )}
-          {estimate.todayFirstMs !== undefined && (
+          {firstGenTimes.todayFirstMs !== undefined && (
             <div>
-              1st generated image today {formatDayTime(estimate.todayFirstMs)}
+              1st generated image today{' '}
+              {formatDayTime(firstGenTimes.todayFirstMs)}
             </div>
           )}
         </div>
