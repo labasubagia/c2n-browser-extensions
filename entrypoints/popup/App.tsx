@@ -488,45 +488,49 @@ export default function App() {
           </ul>
         )}
 
-        <label className="flex items-start gap-2.25 py-2 border-t border-edge first:border-t-0 first:pt-0">
-          <input
-            type="checkbox"
-            className="mt-0.5 accent-accent"
-            checked={deleteConvs}
-            disabled={Boolean(busy) || libraryRunning}
-            onChange={(event) => void toggleDeleteConvs(event.target.checked)}
-          />
-          <span className="flex flex-col gap-0.5 min-w-0">
+        <label className="flex flex-col py-2 border-t border-edge first:border-t-0 first:pt-0">
+          <div className="flex items-center gap-2.25 min-w-0">
+            <input
+              type="checkbox"
+              className="accent-accent shrink-0"
+              checked={deleteConvs}
+              disabled={Boolean(busy) || libraryRunning}
+              onChange={(event) => void toggleDeleteConvs(event.target.checked)}
+            />
             <span className="text-[12.5px] font-semibold">
               Delete conversations after sync
             </span>
-            <span className="text-[11.5px] text-muted">
+          </div>
+          {!running && (
+            <span className="text-[11.5px] text-muted mt-0.5 pl-[25px]">
               Once every image in a conversation has been uploaded or was
               already in Notion, deletes the whole conversation from ChatGPT.
               Any failed upload keeps it.
             </span>
-          </span>
+          )}
         </label>
         {deleteConvs && (
-          <label className="flex items-start gap-2.25 py-2 border-t border-edge first:border-t-0 first:pt-0">
-            <input
-              type="checkbox"
-              className="mt-0.5 accent-accent"
-              checked={deleteLibraryImages}
-              disabled={Boolean(busy) || libraryRunning}
-              onChange={(event) =>
-                void toggleDeleteLibraryImages(event.target.checked)
-              }
-            />
-            <span className="flex flex-col gap-0.5 min-w-0">
+          <label className="flex flex-col py-2 border-t border-edge first:border-t-0 first:pt-0">
+            <div className="flex items-center gap-2.25 min-w-0">
+              <input
+                type="checkbox"
+                className="accent-accent shrink-0"
+                checked={deleteLibraryImages}
+                disabled={Boolean(busy) || libraryRunning}
+                onChange={(event) =>
+                  void toggleDeleteLibraryImages(event.target.checked)
+                }
+              />
               <span className="text-[12.5px] font-semibold">
                 Also delete library images
               </span>
-              <span className="text-[11.5px] text-muted">
+            </div>
+            {!running && (
+              <span className="text-[11.5px] text-muted mt-0.5 pl-[25px]">
                 Permanently deletes the whole conversation — no undo — and its
                 generated and uploaded image artifacts from the ChatGPT library.
               </span>
-            </span>
+            )}
           </label>
         )}
         <div className="flex items-center gap-2 flex-wrap">
